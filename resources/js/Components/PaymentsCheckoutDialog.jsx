@@ -38,7 +38,18 @@ export default function PaymentsCheckoutDialog({
 }) {
     const formatCurrency = useCurrencyFormatter();
     const currencySymbol = useCurrencyStore((state) => state.settings.currency_symbol);
-    const { cartState, cartTotal, emptyCart, totalProfit, charges, totalChargeAmount, finalTotal, discount, setDiscount: setContextDiscount, calculateChargesWithDiscount } = useCart();
+    const {
+        cartState,
+        cartTotal,
+        emptyCart,
+        totalProfit,
+        charges = [],
+        totalChargeAmount = 0,
+        finalTotal,
+        discount = 0,
+        setDiscount: setContextDiscount = () => {},
+        calculateChargesWithDiscount
+    } = useCart();
     const return_sale = usePage().props.return_sale;
     const return_sale_id = usePage().props.sale_id;
     const edit_sale = usePage().props.edit_sale;
@@ -56,10 +67,16 @@ export default function PaymentsCheckoutDialog({
 
     // Initialize recalculated charges when charges/cartTotal/discount change
     useEffect(() => {
-        const initialCharges = calculateChargesWithDiscount(discount);
-        setRecalculatedCharges(initialCharges);
-        setAmount((cartTotal - discount) + initialCharges);
-    }, [charges, cartTotal, discount]);
+        if (calculateChargesWithDiscount) {
+            const initialCharges = calculateChargesWithDiscount(discount);
+            setRecalculatedCharges(initialCharges);
+            setAmount((cartTotal - discount) + initialCharges);
+        } else {
+            // For contexts without charges (like Purchase), just use totalChargeAmount
+            setRecalculatedCharges(totalChargeAmount || 0);
+            setAmount((cartTotal - discount) + (totalChargeAmount || 0));
+        }
+    }, [charges, cartTotal, discount, calculateChargesWithDiscount, totalChargeAmount]);
 
     const [anchorEl, setAnchorEl] = React.useState(null);
     const openPayment = Boolean(anchorEl);
@@ -76,7 +93,9 @@ export default function PaymentsCheckoutDialog({
             inputDiscount !== "" ? parseFloat(inputDiscount) : 0;
         setContextDiscount(newDiscount);
 
-        const recalculatedChargeAmount = calculateChargesWithDiscount(newDiscount);
+        const recalculatedChargeAmount = calculateChargesWithDiscount
+            ? calculateChargesWithDiscount(newDiscount)
+            : (totalChargeAmount || 0);
         setRecalculatedCharges(recalculatedChargeAmount);
     };
 
@@ -213,7 +232,9 @@ export default function PaymentsCheckoutDialog({
         const discountAmount = (cartTotal * discount) / 100;
         setContextDiscount(discountAmount);
 
-        const recalculatedChargeAmount = calculateChargesWithDiscount(discountAmount);
+        const recalculatedChargeAmount = calculateChargesWithDiscount
+            ? calculateChargesWithDiscount(discountAmount)
+            : (totalChargeAmount || 0);
         setRecalculatedCharges(recalculatedChargeAmount);
     }
 
