@@ -1,86 +1,84 @@
 <style>
     .receipt-container {
-    width: 500px;
-    padding: 20px;
-    text-align: center;
-}
+        width: 500px;
+        padding: 20px;
+        text-align: center;
+    }
 
-#print-area {
-    width:100%;
-    padding-right: <%= settings.sale_print_padding_right %>;
-    padding-left: <%= settings.sale_print_padding_left %>;
-}
+    #print-area {
+        width: 100%;
+        padding-right: <%= settings.sale_print_padding_right %>;
+        padding-left: <%= settings.sale_print_padding_left %>;
+    }
 
-.receipt-print-container {
-    width: 100%;
-    font-family: <%= settings.sale_print_font %>;
-    text-align: center;
-}
+    .receipt-print-container {
+        width: 100%;
+        font-family: <%= settings.sale_print_font %>;
+        text-align: center;
+    }
 
-.receipt-logo {
-    width: 160px;
-    box-shadow: none;
-}
+    .receipt-logo {
+        width: 160px;
+        box-shadow: none;
+    }
 
-.receipt-heading {
-    font-size: 20px;
-    font-weight:bold;
-}
+    .receipt-heading {
+        font-size: 20px;
+        font-weight: bold;
+    }
 
-.receipt-subheading {
-    font-size: 17px;
-}
+    .receipt-subheading {
+        font-size: 17px;
+    }
 
-.dashed-divider {
-    border-bottom: 1px dashed grey;
-    margin: 1rem 0;
-}
+    .dashed-divider {
+        border-bottom: 1px dashed grey;
+        margin: 1rem 0;
+    }
 
-.receipt-item-table {
-    width: 100%;
-    padding: 0;
-}
+    .receipt-item-table {
+        width: 100%;
+        padding: 0;
+    }
 
-.receipt-item-header {
-    font-size: 13px;
-    font-weight: bold;
-    padding: 0;
-    padding-bottom:5px;
-}
+    .receipt-item-header {
+        font-size: 13px;
+        font-weight: bold;
+        padding: 0;
+        padding-bottom: 5px;
+    }
 
-tr:has(td.receipt-item) {
-  border-style: solid;
-    border-color: #e5e7eb;
-    border-width: 1px;
-    border-left:none;
-    border-right:none;
-   
-}
+    tr:has(td.receipt-item) {
+        border-style: solid;
+        border-color: #e5e7eb;
+        border-width: 1px;
+        border-left: none;
+        border-right: none;
+    }
 
-.receipt-item {
-    font-size: 14px;
-    font-weight: 500;
-    padding-top:10px;
-    padding-bottom:10px;
-    vertical-align: middle;
-}
+    .receipt-item {
+        font-size: 14px;
+        font-weight: 500;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        vertical-align: middle;
+    }
 
-.receipt-total-row {
-    padding: 7px 0;
-    border-bottom: none;
-}
+    .receipt-total-row {
+        padding: 7px 0;
+        border-bottom: none;
+    }
 
-.receipt-summary {
-    font-weight: bold;
-    font-size:13px;
-}
+    .receipt-summary {
+        font-weight: bold;
+        font-size: 13px;
+    }
 
-.receipt-note {
-    font-size: 13px;
-    font-weight: bold;
-    text-align: center;
-}
-
+    .receipt-note {
+        font-size: 13px;
+        font-weight: bold;
+        text-align: center;
+    }
 </style>
 
 <div class="flex justify-center mt-10">
@@ -88,18 +86,26 @@ tr:has(td.receipt-item) {
         <div id="print-area" class="receipt-container">
             <div class="receipt-print-container">
                 <div class="flex mt-0 flex-col items-center">
-                    <img src="<%= window.location.origin + '/' + settings.shop_logo %>" alt="Shop Logo" class="receipt-logo" />
-                    <h1 class="receipt-heading">
-                        <%= settings.shop_name %>
-                    </h1>
+                    <img
+                        src="<%= window.location.origin + '/' + settings.shop_logo %>"
+                        alt="Shop Logo"
+                        class="receipt-logo"
+                    />
+                    <h1 class="receipt-heading"><%= settings.shop_name %></h1>
                     <h2 class="receipt-subheading">
                         <%= sale.address + ', ' + sale.contact_number %>
                     </h2>
                 </div>
                 <hr class="dashed-divider" />
                 <div class="flex flex-col items-start">
-                    <p class="receipt-item-header">Order: <%= sale.sale_prefix + '/' + sale.invoice_number %></p>
-                    <p class="receipt-item-header">Date: <%= dayjs(sale.created_at).format('DD-MMM-YYYY, h:mm A') %> By: <%= user_name %></p>
+                    <p class="receipt-item-header">
+                        Order: <%= sale.sale_prefix + '/' + sale.invoice_number
+                        %>
+                    </p>
+                    <p class="receipt-item-header">
+                        Date: <%= dayjs(sale.created_at).format('DD-MMM-YYYY,
+                        h:mm A') %> By: <%= user_name %>
+                    </p>
                     <p class="receipt-item-header">Client: <%= sale.name %></p>
                 </div>
                 <hr class="dashed-divider" />
@@ -108,48 +114,113 @@ tr:has(td.receipt-item) {
                     <thead>
                         <tr>
                             <th class="receipt-item-header">#</th>
-                            <th class="receipt-item-header" align="left">Name</th>
-                            <th class="receipt-item-header" align="right">Qty.</th>
-                            <th class="receipt-item-header" align="right">Price</th>
-                            <th class="receipt-item-header" align="right">Total</th>
+                            <th class="receipt-item-header" align="left">
+                                Name
+                            </th>
+                            <th class="receipt-item-header" align="right">
+                                Qty.
+                            </th>
+                            <th class="receipt-item-header" align="right">
+                                Price
+                            </th>
+                            <th class="receipt-item-header" align="right">
+                                Total
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         <% salesItems.forEach((item, index) => { %>
-                            <tr>
-                                <td class="receipt-item"><%= index + 1 %>.</td>
-                                <td class="receipt-item" align="left"><%= item.name %></td>
-                                <td class="receipt-item" align="right"><%= numeral(item.quantity).format('0,0.00') %></td>
-                                <td class="receipt-item" align="right"><%= numeral(item.unit_price - item.discount).format('0,0.00') %></td>
-                                <td class="receipt-item" align="right"><%= numeral(parseFloat(item.quantity) * (item.unit_price - item.discount)).format('0,0.00') %></td>
-                            </tr>
+                        <tr>
+                            <td class="receipt-item"><%= index + 1 %>.</td>
+                            <td class="receipt-item" align="left">
+                                <%= item.name %>
+                            </td>
+                            <td class="receipt-item" align="right">
+                                <%= numeral(item.quantity).format('0,0.00') %>
+                            </td>
+                            <td class="receipt-item" align="right">
+                                <%= numeral(item.unit_price -
+                                item.discount).format('0,0.00') %>
+                            </td>
+                            <td class="receipt-item" align="right">
+                                <%= numeral(parseFloat(item.quantity) *
+                                (item.unit_price -
+                                item.discount)).format('0,0.00') %>
+                            </td>
+                        </tr>
                         <% }); %>
                         <tr class="receipt-total-row">
-                            <td colspan="4"> <br> </td>
+                            <td colspan="4"><br /></td>
                         </tr>
                         <tr>
-                            <td colspan="4" align="right" class="receipt-summary">Total:</td>
+                            <td
+                                colspan="4"
+                                align="right"
+                                class="receipt-summary"
+                            >
+                                Total:
+                            </td>
                             <td align="right" class="receipt-summary">
-                                Rs. <%= numeral(parseFloat(sale.total_amount) + parseFloat(sale.discount)).format('0,0.00') %>
+                                UGX <%= numeral(parseFloat(sale.total_amount) +
+                                parseFloat(sale.discount)).format('0,0.00') %>
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="4" align="right" class="receipt-summary">Discount:</td>
-                            <td align="right" class="receipt-summary">Rs. <%= numeral(sale.discount).format('0,0.00') %></td>
-                        </tr>
-                        <tr><td><br></td></tr>
-                        <tr>
-                            <td colspan="4" align="right" class="receipt-summary">Subtotal:</td>
-                            <td align="right" class="receipt-summary">Rs. <%= numeral(sale.total_amount).format('0,0.00') %></td>
-                        </tr>
-                        <tr>
-                            <td colspan="4" align="right" class="receipt-summary">Cash:</td>
-                            <td align="right" class="receipt-summary">Rs. <%= numeral(sale.amount_received).format('0,0.00') %></td>
-                        </tr>
-                        <tr>
-                            <td colspan="4" align="right" class="receipt-summary">Change:</td>
+                            <td
+                                colspan="4"
+                                align="right"
+                                class="receipt-summary"
+                            >
+                                Discount:
+                            </td>
                             <td align="right" class="receipt-summary">
-                                Rs. <%= numeral(parseFloat(sale.amount_received) - parseFloat(sale.total_amount)).format('0,0.00') %>
+                                UGX <%= numeral(sale.discount).format('0,0.00')
+                                %>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><br /></td>
+                        </tr>
+                        <tr>
+                            <td
+                                colspan="4"
+                                align="right"
+                                class="receipt-summary"
+                            >
+                                Subtotal:
+                            </td>
+                            <td align="right" class="receipt-summary">
+                                UGX <%=
+                                numeral(sale.total_amount).format('0,0.00') %>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                colspan="4"
+                                align="right"
+                                class="receipt-summary"
+                            >
+                                Cash:
+                            </td>
+                            <td align="right" class="receipt-summary">
+                                UGX <%=
+                                numeral(sale.amount_received).format('0,0.00')
+                                %>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                colspan="4"
+                                align="right"
+                                class="receipt-summary"
+                            >
+                                Change:
+                            </td>
+                            <td align="right" class="receipt-summary">
+                                UGX <%= numeral(parseFloat(sale.amount_received)
+                                -
+                                parseFloat(sale.total_amount)).format('0,0.00')
+                                %>
                             </td>
                         </tr>
                     </tbody>

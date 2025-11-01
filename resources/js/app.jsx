@@ -39,8 +39,8 @@ createInertiaApp({
 
         useCurrencyStore.setState({
             settings: {
-                currency_symbol: 'Rs.',
-                currency_code: 'LKR',
+                currency_symbol: 'UGX ',
+                currency_code: 'UGX ',
                 symbol_position: 'before',
                 decimal_separator: '.',
                 thousands_separator: ',',

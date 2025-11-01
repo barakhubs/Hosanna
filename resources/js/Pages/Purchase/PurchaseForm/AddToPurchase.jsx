@@ -107,7 +107,7 @@ export default function AddToPurchase({
 
     // Handle form input changes
     const handleInputChange = (e) => {
-        const { name, value } = e.target;        
+        const { name, value } = e.target;
 
         setFormState((prevState) => ({
             ...prevState,
@@ -167,7 +167,7 @@ export default function AddToPurchase({
                                         shrink: true,
                                     },
                                     input: {
-                                        // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                        // startAdornment: <InputAdornment position="start">UGX </InputAdornment>,
                                     },
                                 }}
                             />
@@ -215,7 +215,7 @@ export default function AddToPurchase({
                                 />
                             </Grid>
                         )}
-                        
+
                         <Grid size={6}>
                             <TextField
                                 fullWidth
@@ -237,7 +237,7 @@ export default function AddToPurchase({
                                         shrink: true,
                                     },
                                     input: {
-                                        // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                        // startAdornment: <InputAdornment position="start">UGX </InputAdornment>,
                                     },
                                 }}
                             />

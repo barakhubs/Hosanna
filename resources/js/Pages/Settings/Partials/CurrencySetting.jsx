@@ -7,8 +7,8 @@ export default function CurrencySetting({ handleSubmit, settingFormData, handleC
     const previewNumbers = [1500, 1500.50, -1500, -1500.50];
 
     const getPreviewSettings = () => ({
-        currency_symbol: settingFormData.currency_symbol || 'Rs.',
-        currency_code: settingFormData.currency_code || 'LKR',
+        currency_symbol: settingFormData.currency_symbol || 'UGX ',
+        currency_code: settingFormData.currency_code || 'UGX ',
         symbol_position: settingFormData.symbol_position || 'before',
         decimal_separator: settingFormData.decimal_separator || '.',
         thousands_separator: settingFormData.thousands_separator || ',',
@@ -83,8 +83,8 @@ export default function CurrencySetting({ handleSubmit, settingFormData, handleC
                                     onChange={handleChange}
                                     variant="outlined"
                                 >
-                                    <MenuItem value="before">Before Amount ({settingFormData.currency_symbol || 'Rs.'} 1,500.00)</MenuItem>
-                                    <MenuItem value="after">After Amount (1,500.00 {settingFormData.currency_symbol || 'Rs.'})</MenuItem>
+                                    <MenuItem value="before">Before Amount ({settingFormData.currency_symbol || 'UGX '} 1,500.00)</MenuItem>
+                                    <MenuItem value="after">After Amount (1,500.00 {settingFormData.currency_symbol || 'UGX '})</MenuItem>
                                 </TextField>
                             </Grid>
 
@@ -129,9 +129,9 @@ export default function CurrencySetting({ handleSubmit, settingFormData, handleC
                                     onChange={handleChange}
                                     variant="outlined"
                                 >
-                                    <MenuItem value="0">0 ({settingFormData.currency_symbol || 'Rs.'} 1500)</MenuItem>
-                                    <MenuItem value="2">2 ({settingFormData.currency_symbol || 'Rs.'} 1500.00)</MenuItem>
-                                    <MenuItem value="3">3 ({settingFormData.currency_symbol || 'Rs.'} 1500.000)</MenuItem>
+                                    <MenuItem value="0">0 ({settingFormData.currency_symbol || 'UGX '} 1500)</MenuItem>
+                                    <MenuItem value="2">2 ({settingFormData.currency_symbol || 'UGX '} 1500.00)</MenuItem>
+                                    <MenuItem value="3">3 ({settingFormData.currency_symbol || 'UGX '} 1500.000)</MenuItem>
                                 </TextField>
                             </Grid>
 
@@ -145,8 +145,8 @@ export default function CurrencySetting({ handleSubmit, settingFormData, handleC
                                     onChange={handleChange}
                                     variant="outlined"
                                 >
-                                    <MenuItem value="minus">With Minus Sign (-{settingFormData.currency_symbol || 'Rs.'} 1,500.00)</MenuItem>
-                                    <MenuItem value="parentheses">Parentheses (({settingFormData.currency_symbol || 'Rs.'} 1,500.00))</MenuItem>
+                                    <MenuItem value="minus">With Minus Sign (-{settingFormData.currency_symbol || 'UGX '} 1,500.00)</MenuItem>
+                                    <MenuItem value="parentheses">Parentheses (({settingFormData.currency_symbol || 'UGX '} 1,500.00))</MenuItem>
                                 </TextField>
                             </Grid>
 
@@ -160,8 +160,8 @@ export default function CurrencySetting({ handleSubmit, settingFormData, handleC
                                     onChange={handleChange}
                                     variant="outlined"
                                 >
-                                    <MenuItem value="yes">Yes ({settingFormData.currency_symbol || 'Rs.'} ({settingFormData.currency_code || 'LKR'}) 1,500.00)</MenuItem>
-                                    <MenuItem value="no">No ({settingFormData.currency_symbol || 'Rs.'} 1,500.00)</MenuItem>
+                                    <MenuItem value="yes">Yes ({settingFormData.currency_symbol || 'UGX '} ({settingFormData.currency_code || 'UGX '}) 1,500.00)</MenuItem>
+                                    <MenuItem value="no">No ({settingFormData.currency_symbol || 'UGX '} 1,500.00)</MenuItem>
                                 </TextField>
                             </Grid>
                         </Grid>

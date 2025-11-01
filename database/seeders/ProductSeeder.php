@@ -53,6 +53,7 @@ class ProductSeeder extends Seeder
                         'price' => (float) str_replace(',', '', $data['price']),            // price
                         'contact_id' => $contactId,
                         'created_by' => 1,                    // created_by
+                        'is_featured' => 1,                   // Make products featured by default for POS
                     ]);
 
                     // Step 3: Insert into the `product_stocks` table

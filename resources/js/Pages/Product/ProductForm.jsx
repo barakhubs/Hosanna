@@ -406,7 +406,7 @@ export default function Product({ product, collection, product_code, contacts, p
                                         step={0.5}
                                         slotProps={{
                                             input: {
-                                                // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                                // startAdornment: <InputAdornment position="start">UGX </InputAdornment>,
                                                 step: 0.5,
                                             },
                                         }}

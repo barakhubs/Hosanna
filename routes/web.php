@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/product/{batch_id}/barcode', [ProductController::class, 'getBarcode'])->name('products.barcode');
 
     Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
+    Route::get('/pos/debug', [POSController::class, 'debugProducts'])->name('pos.debug'); // Debug route
     Route::get('/pos/{sale_id}/return', [POSController::class, 'returnIndex'])->name('pos.return');
     Route::post('/pos/checkout', [POSController::class, 'checkout'])->name('pos.checkout');
     Route::get('/pos/customer-display', [POSController::class, 'customerDisplay']);
@@ -105,7 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sold-items-summary', [SaleController::class, 'soldItemSummary'])->name('sales.items.summary');
     Route::delete('/sales/{id}', [SaleController::class, 'destroy'])->name('sales.destroy');
     Route::get('/sale-notification/{id}', [SaleController::class, 'sendNotification']);
-    
+
     Route::get('/purchases', [PurchaseController::class, 'index'])->name('purchases.index');
     Route::get('/purchase/create', [PurchaseController::class, 'create'])->name('purchases.create');
     Route::post('/purchase/store', [PurchaseController::class, 'store'])->name('purchases.store');
@@ -227,7 +228,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/download-backup/{file}', [BackupController::class, 'download']);
     Route::get('/backup-now', [BackupController::class, 'downloadBackupZip']);
-    
+
     Route::post('/test-mail', function (Request $request) {
         Mail::raw('Test email', function ($message) use ($request) {
             $message->to($request->input('test_mail'))->subject('Mail received');

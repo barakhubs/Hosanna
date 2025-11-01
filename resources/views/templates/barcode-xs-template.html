@@ -1,100 +1,97 @@
 <style>
     /* styles.css */
-.barcode-container {
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  width: 40mm;
-}
+    .barcode-container {
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        width: 40mm;
+    }
 
-.store-name {
-  font-weight: bold;
-  z-index: 20;
-}
+    .store-name {
+        font-weight: bold;
+        z-index: 20;
+    }
 
-.product-price {
-  font-weight: bold;
-}
+    .product-price {
+        font-weight: bold;
+    }
 
-.barcode img {
-  display: block;
-}
+    .barcode img {
+        display: block;
+    }
 
-.product-name {
-  font-weight: bold;
-}
+    .product-name {
+        font-weight: bold;
+    }
 
-.wrapper {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    .wrapper {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-svg#barcode {
-    width: 100%;
-}
-
+    svg#barcode {
+        width: 100%;
+    }
 </style>
 <div class="wrapper">
-<div class="barcode-container">
-    <% if (barcode_settings.show_barcode_store === "on") { %>
-      <p class="store-name" style="font-size: <%= settings.storeFontSize %>;">
-        <%= shop_name %>
-      </p>
-    <% } %>
-    
-    <div 
-      class="barcode" 
-      style="margin-top: <%= settings.barcodeMarginTop %>; width: 100%;"
-    >
-      <svg 
-        alt="Barcode" 
-        id="barcode"
-        style="width: 100%;"
-      > </svg>
+    <div class="barcode-container">
+        <% if (barcode_settings.show_barcode_store === "on") { %>
+        <p class="store-name" style="font-size: <%= settings.storeFontSize %>">
+            <%= shop_name %>
+        </p>
+        <% } %>
+
+        <div
+            class="barcode"
+            style="margin-top: <%= settings.barcodeMarginTop %>; width: 100%"
+        >
+            <svg alt="Barcode" id="barcode" style="width: 100%"></svg>
+        </div>
+        <% if (barcode_settings.show_barcode_product_name === "on") { %>
+        <p
+            class="product-name"
+            style="
+                margin-top: <%= settings.productNameMarginTop %>;
+                font-size: <%= settings.productNameFontSize %>;
+            "
+        >
+            <%= product.name %>
+        </p>
+        <hr width="100%" style="margin: 2px; border-top: 1px solid black" />
+        <% } %> <% if (product.discount_percentage &&
+        parseFloat(product.discount_percentage) !== 0) { %>
+        <div
+            class="product-price"
+            style="
+                font-size: <%= settings.priceFontSize %>;
+                margin-top: <%= settings.priceMarginTop %>;
+                margin-bottom: <%= settings.priceMarginBottom %>;
+                display: flex;
+                justify-content: space-between;
+                width: 100%;
+            "
+        >
+            <p><%= Math.floor(product.discount_percentage) %>% Off</p>
+            <p>UGX <%= product.price %></p>
+        </div>
+        <% } %> <% if (barcode_settings.show_barcode_product_price === "on" &&
+        (!product.discount_percentage || parseFloat(product.discount_percentage)
+        === 0)) { %>
+
+        <p
+            class="product-price"
+            style="
+                font-size: <%= settings.priceFontSize %>;
+                margin-top: <%= settings.priceMarginTop %>;
+                margin-bottom: <%= settings.priceMarginBottom %>;
+            "
+        >
+            UGX <%= product.price %>
+        </p>
+        <% } %>
     </div>
-    <% if (barcode_settings.show_barcode_product_name === "on") { %>
-      <p 
-        class="product-name" 
-        style="
-          margin-top: <%= settings.productNameMarginTop %>; 
-          font-size: <%= settings.productNameFontSize %>;
-        "
-      >
-        <%= product.name %>
-      </p>
-      <hr width="100%" style="margin: 2px; border-top: 1px solid black;"/>
-    <% } %>
-
-    <% if (product.discount_percentage && parseFloat(product.discount_percentage) !== 0) { %>
-      <div class="product-price" style="
-        font-size: <%= settings.priceFontSize %>; 
-        margin-top: <%= settings.priceMarginTop %>; 
-        margin-bottom: <%= settings.priceMarginBottom %>;
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-      ">
-      <p><%= Math.floor(product.discount_percentage) %>% Off</p>
-       <p> Rs. <%= product.price %></p>
-      </div>
-    <% } %>
-
-    <% if (barcode_settings.show_barcode_product_price === "on" && (!product.discount_percentage || parseFloat(product.discount_percentage) === 0)) { %>
-
-      <p 
-        class="product-price"
-        style="
-          font-size: <%= settings.priceFontSize %>; 
-          margin-top: <%= settings.priceMarginTop %>; 
-          margin-bottom: <%= settings.priceMarginBottom %>;
-        "
-      >
-        Rs. <%= product.price %>
-      </p>
-    <% } %>
-  </div>
 </div>

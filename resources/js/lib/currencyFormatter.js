@@ -1,5 +1,5 @@
-import numeral from 'numeral';
-import { useCurrencyStore } from '../stores/currencyStore';
+import numeral from "numeral";
+import { useCurrencyStore } from "../stores/currencyStore";
 
 let localeRegistered = false;
 
@@ -12,40 +12,43 @@ const registerCurrencyLocale = (settings) => {
 
     // Only register if not already registered
     if (!localeRegistered) {
-        numeral.register('locale', 'custom-currency', {
+        numeral.register("locale", "custom-currency", {
             delimiters: {
-                thousands: settings.thousands_separator || ',',
-                decimal: settings.decimal_separator || '.',
+                thousands: settings.thousands_separator || ",",
+                decimal: settings.decimal_separator || ".",
             },
             abbreviations: {
-                thousand: 'k',
-                million: 'm',
-                billion: 'b',
-                trillion: 't',
+                thousand: "k",
+                million: "m",
+                billion: "b",
+                trillion: "t",
             },
             ordinal: (number) => {
                 const b = number % 10;
                 return ~~((number % 100) / 10) === 1
-                    ? 'th'
+                    ? "th"
                     : b === 1
-                    ? 'st'
+                    ? "st"
                     : b === 2
-                    ? 'nd'
+                    ? "nd"
                     : b === 3
-                    ? 'rd'
-                    : 'th';
+                    ? "rd"
+                    : "th";
             },
             currency: {
-                symbol: settings.currency_symbol || '$',
-                position: settings.symbol_position === 'before' ? 'prefix' : 'postfix',
-                code: settings.currency_code || 'USD',
+                symbol: settings.currency_symbol || "$",
+                position:
+                    settings.symbol_position === "before"
+                        ? "prefix"
+                        : "postfix",
+                code: settings.currency_code || "USD",
             },
         });
         localeRegistered = true;
     }
 
     // Set the locale to use custom-currency
-    numeral.locale('custom-currency');
+    numeral.locale("custom-currency");
 };
 
 /**
@@ -55,18 +58,22 @@ const registerCurrencyLocale = (settings) => {
  * @param {boolean} includeCurrencySymbol - Whether to include currency symbol (default: true)
  * @returns {string} - Formatted currency string
  */
-export const formatCurrency = (amount, settings = {}, includeCurrencySymbol = true) => {
+export const formatCurrency = (
+    amount,
+    settings = {},
+    includeCurrencySymbol = true
+) => {
     const currencySettings = settings || {};
 
     // Register custom locale with current settings
     registerCurrencyLocale(currencySettings);
-    numeral.locale('custom-currency');
+    numeral.locale("custom-currency");
 
     // Parse amount - handle string inputs that might have separators
     let parsedAmount = 0;
-    if (typeof amount === 'string') {
+    if (typeof amount === "string") {
         // Remove any existing separators and parse
-        parsedAmount = parseFloat(amount.replace(/[^\d.-]/g, ''));
+        parsedAmount = parseFloat(amount.replace(/[^\d.-]/g, ""));
     } else {
         parsedAmount = parseFloat(amount) || 0;
     }
@@ -76,9 +83,9 @@ export const formatCurrency = (amount, settings = {}, includeCurrencySymbol = tr
     const decimalPlaces = parseInt(currencySettings.decimal_places || 2);
 
     // Build numeral format string
-    let formatString = '0,0';
+    let formatString = "0,0";
     if (decimalPlaces > 0) {
-        formatString += '.' + '0'.repeat(decimalPlaces);
+        formatString += "." + "0".repeat(decimalPlaces);
     }
 
     // Format using numeral with custom locale
@@ -87,11 +94,12 @@ export const formatCurrency = (amount, settings = {}, includeCurrencySymbol = tr
     // Build formatted result
     let result;
     if (includeCurrencySymbol) {
-        const currencyPart = currencySettings.show_currency_code === 'yes'
-            ? `${currencySettings.currency_symbol} (${currencySettings.currency_code})`
-            : currencySettings.currency_symbol;
+        const currencyPart =
+            currencySettings.show_currency_code === "yes"
+                ? `${currencySettings.currency_symbol} (${currencySettings.currency_code})`
+                : currencySettings.currency_symbol;
 
-        if (currencySettings.symbol_position === 'before') {
+        if (currencySettings.symbol_position === "before") {
             result = `${currencyPart} ${formattedNumber}`;
         } else {
             result = `${formattedNumber} ${currencyPart}`;
@@ -102,7 +110,7 @@ export const formatCurrency = (amount, settings = {}, includeCurrencySymbol = tr
 
     // Handle negative format
     if (isNegative) {
-        if (currencySettings.negative_format === 'parentheses') {
+        if (currencySettings.negative_format === "parentheses") {
             result = `(${result})`;
         } else {
             result = `-${result}`;
@@ -119,8 +127,8 @@ export const formatCurrency = (amount, settings = {}, includeCurrencySymbol = tr
  * @returns {number} - Clean numeric value
  */
 export const toNumeric = (value) => {
-    if (value === null || value === undefined || value === '') return 0;
-    const cleaned = String(value).replace(/[^\d.-]/g, '');
+    if (value === null || value === undefined || value === "") return 0;
+    const cleaned = String(value).replace(/[^\d.-]/g, "");
     return parseFloat(cleaned) || 0;
 };
 
@@ -129,7 +137,7 @@ export const toNumeric = (value) => {
  * @returns {function} - formatCurrency function bound to store settings
  * Usage:
  *   const formatCurrency = useCurrencyFormatter();
- *   formatCurrency(1500)          // With currency symbol: Rs. 1,500.00
+ *   formatCurrency(1500)          // With currency symbol: UGX 1,500.00
  *   formatCurrency(1500, false)   // Plain number: 1,500.00
  */
 export const useCurrencyFormatter = () => {

@@ -91,7 +91,7 @@ const Catalog = ({ open, id, onClose }) => {
                                         <li key={product.id + product.batch_number} className="p-2 w-full shadow-sm">
                                             <div className="flex justify-between items-start">
                                                 <div className="uppercase tracking-wide text-sm text-blue-900 font-semibold">
-                                                    {product.name} Rs. {product.price}
+                                                    {product.name} UGX {product.price}
                                                 </div>
                                                 <div className="flex ml-2">
                                                     {numeral(product.stock_quantity).format("0,0")}
@@ -177,7 +177,7 @@ const Cart = ({ cartState, contact_id, useCart }) => {
                                 <div className="font-semibold text-sm">
                                     #{index + 1} | {item.name}
                                 </div>
-                                <div className="text-sm font-bold text-right">Rs. {numeral(total).format("0,0.00")}</div>
+                                <div className="text-sm font-bold text-right">UGX {numeral(total).format("0,0.00")}</div>
                             </div>
 
                             {/* Breakdown row */}
@@ -187,7 +187,7 @@ const Cart = ({ cartState, contact_id, useCart }) => {
                                 </div>
 
                                 <div>
-                                    <div className="text-gray-500 text-xs text-right">({item.price} x {item.quantity}) - {item.flat_discount} = Rs. {numeral(total).format("0,0.00")}</div>
+                                    <div className="text-gray-500 text-xs text-right">({item.price} x {item.quantity}) - {item.flat_discount} = UGX {numeral(total).format("0,0.00")}</div>
                                 </div>
                             </div>
                         </li>
@@ -202,7 +202,7 @@ const Cart = ({ cartState, contact_id, useCart }) => {
                     </div>
                     <div className="flex justify-between items-center">
                         <div className="font-semibold text-sm">Total</div>
-                        <div className="text-sm font-bold">Rs. {numeral(cartTotal).format("0,0.00")}</div>
+                        <div className="text-sm font-bold">UGX {numeral(cartTotal).format("0,0.00")}</div>
                     </div>
                 </li>
             </ul>

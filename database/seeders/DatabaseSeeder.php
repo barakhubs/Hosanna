@@ -85,14 +85,14 @@ class DatabaseSeeder extends Seeder
             'pos'
         ];
         $userRole->givePermissionTo($userPermissions);
-        
+
         $superAdmin=User::create([
             'name' => 'Admin',
             'user_name'=>'master',
             'user_role'=>'super-admin',
-            'email' => 'master@infomax.lk',
+            'email' => 'master@hosanna.mart',
             'store_id' => 1,
-            'password' => Hash::make('8236'),
+            'password' => Hash::make('password'),
         ]);
         $superAdmin->assignRole($superAdminRole);
 
@@ -100,9 +100,9 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin',
             'user_name'=>'admin',
             'user_role'=>'admin',
-            'email' => 'admin@infomax.lk',
+            'email' => 'admin@hosanna.mart',
             'store_id' => 1,
-            'password' => Hash::make('8236'),
+            'password' => Hash::make('password'),
         ]);
         $admin->assignRole($adminRole);
 

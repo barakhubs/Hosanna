@@ -58,7 +58,7 @@ const CartComponent = () => {
                         <strong>Total</strong>
                     </Typography>
                     <Typography variant="h4" color="initial">
-                    <strong>Rs.{(cartTotal).toFixed(2)}</strong>
+                    <strong>UGX {(cartTotal).toFixed(2)}</strong>
                     </Typography>
                 </Item>
             </Stack>

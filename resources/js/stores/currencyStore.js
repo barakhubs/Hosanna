@@ -1,14 +1,14 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 const defaultSettings = {
-    currency_symbol: 'Rs.',
-    currency_code: 'LKR',
-    symbol_position: 'before',
-    decimal_separator: '.',
-    thousands_separator: ',',
-    decimal_places: '2',
-    negative_format: 'minus',
-    show_currency_code: 'no',
+    currency_symbol: "UGX ",
+    currency_code: "UGX ",
+    symbol_position: "before",
+    decimal_separator: ".",
+    thousands_separator: ",",
+    decimal_places: "2",
+    negative_format: "minus",
+    show_currency_code: "no",
 };
 
 export const useCurrencyStore = create((set) => ({

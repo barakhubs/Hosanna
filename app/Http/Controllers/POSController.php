@@ -28,6 +28,19 @@ use App\Models\Charge;
 
 class POSController extends Controller
 {
+    // Debug method to test POS products query
+    public function debugProducts(Request $request)
+    {
+        $products = $this->getProducts();
+
+        return response()->json([
+            'products_count' => $products->count(),
+            'products' => $products->toArray(),
+            'session_store_id' => session('store_id'),
+            'user_store_id' => Auth::check() ? Auth::user()->store_id : 'not authenticated',
+            'current_store_id' => session('store_id') ?? (Auth::check() ? Auth::user()->store_id : 1),
+        ]);
+    }
     public function getProducts($filters = [])
     {
         $imageUrl = '/storage/';
@@ -37,7 +50,7 @@ class POSController extends Controller
         $query = Product::query();
         $query->select(
             'products.id',
-            DB::raw("CONCAT('{$imageUrl}', products.image_url) AS image_url"),
+            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
             'products.name',
             'products.is_stock_managed',
             DB::raw("COALESCE(pb.batch_number, 'N/A') AS batch_number"),
@@ -54,14 +67,27 @@ class POSController extends Controller
         )
             ->leftJoin('product_batches AS pb', 'products.id', '=', 'pb.product_id') // Join with product_batches using product_id
             ->leftJoin('product_stocks', 'pb.id', '=', 'product_stocks.batch_id') // Join with product_stocks using batch_id
-            ->where('product_stocks.store_id', session('store_id', Auth::user()->store_id))
             ->where('pb.is_active', 1);
+
+        // Get current store ID with fallback
+        $currentStoreId = session('store_id');
+        if (!$currentStoreId && Auth::check()) {
+            $currentStoreId = Auth::user()->store_id;
+        }
+        if (!$currentStoreId) {
+            $currentStoreId = 1; // Fallback to store ID 1
+        }
+
+        // Filter by store only if we have stocks for this store
+        $query->where('product_stocks.store_id', $currentStoreId);
 
         // Apply category filter if set
         if (isset($filters['category_id'])) {
             $query->where('products.category_id', $filters['category_id']);
         } else if (!isset($filters['all_products'])) {
-            $query->where('pb.is_featured', 1);
+            // Changed: Don't filter by is_featured by default, this was causing products to not show
+            // $query->where('pb.is_featured', 1);
+            // Instead, let's show all active products
         }
 
         $productsQuery = $query->groupBy(
@@ -87,6 +113,14 @@ class POSController extends Controller
         }
 
         $products = $productsQuery->get();
+
+        // Debug logging
+        Log::info('POS getProducts debug', [
+            'current_store_id' => $currentStoreId,
+            'products_count' => $products->count(),
+            'sql_query' => $productsQuery->toSql(),
+            'bindings' => $productsQuery->getBindings(),
+        ]);
 
         return $products;
     }
@@ -130,7 +164,7 @@ class POSController extends Controller
         $defaultCharges = Charge::where('is_active', true)
             ->where('is_default', true)
             ->get()
-            ->map(function($charge) {
+            ->map(function ($charge) {
                 return [
                     'id' => $charge->id,
                     'name' => $charge->name,
@@ -172,7 +206,7 @@ class POSController extends Controller
         $defaultCharges = SaleItem::where('sale_id', $sale_id)
             ->where('item_type', 'charge')
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->charge_id ?? $item->id ?? rand(100000, 999999),
                     'name' => $item->description ?? 'Charge',
@@ -220,7 +254,7 @@ class POSController extends Controller
 
         $products = Product::select(
             'products.id',
-            DB::raw("CONCAT('{$imageUrl}', products.image_url) AS image_url"),
+            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
             'products.name',
             'si.discount',
             'products.is_stock_managed',
@@ -235,9 +269,9 @@ class POSController extends Controller
             ->join('sale_items AS si', function ($join) use ($sale_id) {
                 $join->on('products.id', '=', 'si.product_id')
                     ->where('si.sale_id', '=', $sale_id) // Ensure product is associated with the given sale_id
-                    ->where(function($q) {
+                    ->where(function ($q) {
                         $q->where('si.item_type', '!=', 'charge')
-                          ->orWhereNull('si.item_type');
+                            ->orWhereNull('si.item_type');
                     });
             })
             ->leftJoin('product_batches AS pb', 'products.id', '=', 'pb.product_id') // Join with product_batches using product_id
@@ -263,7 +297,7 @@ class POSController extends Controller
         $defaultCharges = SaleItem::where('sale_id', $sale_id)
             ->where('item_type', 'charge')
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'id' => $item->charge_id ?? $item->id ?? rand(100000, 999999),
                     'name' => $item->description ?? 'Charge',
@@ -453,7 +487,7 @@ class POSController extends Controller
 
                     // Check if stock exists
                     if ($productStock) {
-                         // Total deduction = sold qty + free qty
+                        // Total deduction = sold qty + free qty
                         $deduction = $item['quantity'] + ($item['free_quantity'] ?? 0);
                         $productStock->quantity -= $deduction;
 
@@ -511,9 +545,9 @@ class POSController extends Controller
                 if ($originalSale) {
                     // Get original product items (exclude charges)
                     $originalProducts = SaleItem::where('sale_id', $originalSale->id)
-                        ->where(function($query) {
+                        ->where(function ($query) {
                             $query->where('item_type', '!=', 'charge')
-                                  ->orWhereNull('item_type');
+                                ->orWhereNull('item_type');
                         })
                         ->get();
 

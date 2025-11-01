@@ -20,7 +20,7 @@ export default function Commission({ handleChange, formState }) {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    Rs.
+                                    UGX
                                 </InputAdornment>
                             ),
                         },

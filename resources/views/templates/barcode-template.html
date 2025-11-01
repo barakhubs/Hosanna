@@ -47,22 +47,22 @@
     <div class="barcode-content">
         <div class="barcode-image">
       <img src="<%= window.location.origin +"/" +barcode_settings.shop_logo %>">
-      </img>    
+      </img>
     </div>
-    <div 
-      class="barcode" 
+    <div
+      class="barcode"
       style="margin-top: <%= settings.barcodeMarginTop %>;"
     >
-      <svg 
-        alt="Barcode" 
+      <svg
+        alt="Barcode"
         id="barcode"
       > </svg>
     </div>
     </div>
     <div class="barcode-description">
       <% if (barcode_settings.show_barcode_product_name === "on") { %>
-      <p 
-        class="product-name" 
+      <p
+        class="product-name"
         style="
           font-size: 1.2rem;
           font-weight:boldl
@@ -72,16 +72,16 @@
       </p>
     <% } %>
     <% if (barcode_settings.show_barcode_product_price === "on") { %>
-      <p 
+      <p
         class="product-price"
         style="
-          font-size: 1.4rem; 
+          font-size: 1.4rem;
           font-weight:bolder;
-          margin-top: <%= settings.priceMarginTop %>; 
+          margin-top: <%= settings.priceMarginTop %>;
           margin-bottom: <%= settings.priceMarginBottom %>;
         "
       >
-        <b> RS. <%= product.price %> </b>
+        <b> UGX <%= product.price %> </b>
       </p>
     <% } %>
     </div>

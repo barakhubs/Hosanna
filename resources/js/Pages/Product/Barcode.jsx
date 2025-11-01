@@ -36,35 +36,76 @@ export default function ProoductBarcode({
     const [renderedTemplate, setRenderedTemplate] = useState("");
 
     function generateBarcode() {
-      // Ensure that the barcode element is available before calling JsBarcode
-      if (product.barcode.length > 6) {
-        settings.barcodeWidth = 1.2;
-      }
-      
-      JsBarcode("#barcode", product.barcode, {
-        format: settings.barcodeFormat,
-        width: settings.barcodeWidth,
-        height: settings.barcodeHeight,
-        fontSize: settings.barcodeFontSize,
-      });
+        // Ensure that the barcode element is available before calling JsBarcode
+        const barcodeElement = document.getElementById('barcode');
+
+        if (!barcodeElement) {
+            console.error('Barcode element not found');
+            return;
+        }
+
+        if (!product.barcode) {
+            console.error('Product barcode is missing');
+            return;
+        }
+
+        if (product.barcode && product.barcode.length > 6) {
+            settings.barcodeWidth = 1.2;
+        }
+
+        try {
+            JsBarcode(barcodeElement, product.barcode, {
+                format: settings.barcodeFormat,
+                width: settings.barcodeWidth,
+                height: settings.barcodeHeight,
+                fontSize: settings.barcodeFontSize,
+            });
+        } catch (error) {
+            console.error('Error generating barcode:', error);
+        }
     }
 
     useEffect(() => {
-        const data = {
-            product,
-            settings,
-            shop_name,
-            barcode_settings,
-        };
-        // Render the EJS template with the fetched data
-        const rendered = ejs.render(template, data);
-        setRenderedTemplate(rendered);
+        if (template && template.trim() !== '') {
+            const data = {
+                product,
+                settings,
+                shop_name,
+                barcode_settings,
+            };
+            // Render the EJS template with the fetched data
+            try {
+                const rendered = ejs.render(template, data);
+                setRenderedTemplate(rendered);
+            } catch (error) {
+                console.error('Error rendering template:', error);
+                setRenderedTemplate('<div>Error loading barcode template</div>');
+            }
+        } else {
+            console.error('Template is empty or missing');
+            setRenderedTemplate('<div>Barcode template not found</div>');
+        }
     }, [template]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-          generateBarcode(); // Call the barcode generation function
-        }, 500);
+        if (renderedTemplate) {
+            // Use a more reliable approach to wait for DOM elements
+            const attemptBarcodeGeneration = (attempts = 0) => {
+                const maxAttempts = 10;
+                const barcodeElement = document.getElementById('barcode');
+
+                if (barcodeElement) {
+                    generateBarcode();
+                } else if (attempts < maxAttempts) {
+                    setTimeout(() => attemptBarcodeGeneration(attempts + 1), 100);
+                } else {
+                    console.error('Barcode element not found after maximum attempts');
+                }
+            };
+
+            // Start attempting to generate barcode
+            attemptBarcodeGeneration();
+        }
     }, [renderedTemplate]);
 
     return (

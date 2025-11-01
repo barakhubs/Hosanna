@@ -64,7 +64,7 @@ const MobileContactsList = ({ contacts, handleContactEdit }) => {
                         <div className="mt-2 grid grid-cols-2 gap-4">
                             <div onClick={() => handleContactEdit(contact, 'add_payment')}>
                                 <div className="text-gray-500 text-sm">Balance</div>
-                                <div className="text-gray-700 text-sm font-bold">Rs. {contact.balance}</div>
+                                <div className="text-gray-700 text-sm font-bold">UGX {contact.balance}</div>
                             </div>
                             <div>
                                 <div className="text-gray-500 text-sm">Phone</div>

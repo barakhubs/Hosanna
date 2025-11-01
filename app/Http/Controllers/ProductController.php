@@ -133,8 +133,8 @@ class ProductController extends Controller
             'product_code' => $nextItemCode,
             'pageLabel' => 'Product Details',
             'contacts' => $contacts,
-            'product_alert'=> $miscSettings['product_alert'] ?? 3,
-            'misc_setting'=> $miscSettings,
+            'product_alert' => $miscSettings['product_alert'] ?? 3,
+            'misc_setting' => $miscSettings,
         ]);
     }
 
@@ -162,7 +162,7 @@ class ProductController extends Controller
             'collection' => $collection, // Example if you have categories
             'product' => $product,
             'pageLabel' => 'Product Details',
-            'misc_setting'=> $miscSettings,
+            'misc_setting' => $miscSettings,
         ]);
     }
 
@@ -351,7 +351,7 @@ class ProductController extends Controller
 
         $products = Product::select(
             'products.id',
-            DB::raw("CONCAT('{$imageUrl}', products.image_url) AS image_url"),
+            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
             'products.name',
             'products.barcode',
             // DB::raw("COALESCE(products.sku, 'N/A') AS sku"), //if we comment it, it will not generate on front end
@@ -550,11 +550,27 @@ class ProductController extends Controller
         $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
 
-        $templateName = 'barcode-template.html'; // or get this from the request
-        $templatePath = storage_path("app/public/templates/{$templateName}");
-        $content = File::exists($templatePath) ? File::get($templatePath) : '';
+        $templateName = 'barcode-template.html';
 
-        $template = Setting::where('meta_key', 'barcode-template')->first();
+        // Try multiple template locations
+        $templatePaths = [
+            storage_path("app/public/templates/{$templateName}"),
+            resource_path("views/templates/{$templateName}"),
+        ];
+
+        $content = '';
+        foreach ($templatePaths as $templatePath) {
+            if (File::exists($templatePath)) {
+                $content = File::get($templatePath);
+                break;
+            }
+        }
+
+        // Fallback to database template if file doesn't exist
+        if (empty($content)) {
+            $template = Setting::where('meta_key', 'barcode-template')->first();
+            $content = $template ? $template->meta_value : '';
+        }
 
         // Render the 'Products' component with data
         return Inertia::render('Product/Barcode', [
