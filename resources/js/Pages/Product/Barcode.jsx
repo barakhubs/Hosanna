@@ -1,8 +1,6 @@
-import * as React from "react";
 import { useState, useEffect } from "react";
 import { Head, usePage } from "@inertiajs/react";
-import ejs from "ejs";
-import JsBarcode from "jsbarcode";
+import { renderBarcodeTemplate, generateBarcodeInTemplate } from "@/lib/barcodeTemplateRenderer";
 
 export default function ProoductBarcode({
     product,
@@ -10,6 +8,7 @@ export default function ProoductBarcode({
     template,
 }) {
     const shop_name = usePage().props.settings.shop_name;
+    const formattedPrice = product.selling_price ? `${product.selling_price}` : '';
 
     const parsedBarcodeSettings = barcode_settings.barcode_settings
         ? JSON.parse(barcode_settings.barcode_settings)
@@ -32,9 +31,9 @@ export default function ProoductBarcode({
             parsedBarcodeSettings.product_name_font_size || "0.7em",
     });
 
-    const [content, setContent] = useState("");
     const [renderedTemplate, setRenderedTemplate] = useState("");
 
+<<<<<<< HEAD
     function generateBarcode() {
         // Ensure that the barcode element is available before calling JsBarcode
         const barcodeElement = document.getElementById('barcode');
@@ -107,6 +106,54 @@ export default function ProoductBarcode({
             attemptBarcodeGeneration();
         }
     }, [renderedTemplate]);
+=======
+    useEffect(() => {
+        const renderTemplate = async () => {
+            let templateToUse = template;
+
+            // If no template provided from props, try to fetch from settings
+            if (!templateToUse) {
+                try {
+                    const response = await fetch('/api/barcode-template');
+                    const data = await response.json();
+                    templateToUse = data.template || '';
+                } catch (error) {
+                    console.error('Error fetching barcode template:', error);
+                }
+            }
+
+            // Prepare data for template rendering
+            const templateData = {
+                product_name: product.name || '',
+                price: formattedPrice,
+                barcode_code: product.barcode || '',
+                store_name: shop_name || '',
+                date: new Date().toLocaleDateString(),
+            };
+
+            // Render the template with data
+            const rendered = renderBarcodeTemplate(templateToUse, templateData);
+            setRenderedTemplate(rendered);
+        };
+
+        renderTemplate();
+    }, [product, shop_name, formattedPrice]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            generateBarcodeInTemplate({
+                elementId: 'barcode-svg',
+                barcodeCode: product.barcode,
+                format: settings.barcodeFormat,
+                width: parseFloat(settings.barcodeWidth),
+                height: parseInt(settings.barcodeHeight),
+                fontSize: parseInt(settings.barcodeFontSize),
+            });
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [renderedTemplate, settings]);
+>>>>>>> fe137f937eff2b1cef283cdaa97cf676d78693eb
 
     return (
         <>

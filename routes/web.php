@@ -34,6 +34,7 @@ use App\Http\Controllers\SaleTemplateController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DevDatabaseController;
 use App\Http\Controllers\ChargeController;
+use App\Http\Controllers\SyncController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -54,8 +55,20 @@ Route::get('/pending-sales-receipt/{contact_id}', [SaleController::class, 'pendi
 Route::get('/version', [UpgradeController::class, 'checkVersion']);
 Route::post('/api/application-update', [UpgradeController::class, 'applicationUpdate']);
 
-// Development-only database access route
-Route::get('/dev/db', [DevDatabaseController::class, 'query']);
+// V2 Update routes (migration-based)
+Route::post('/api/application-update-v2', [UpgradeController::class, 'applicationUpdateV2']);
+
+
+// Unified Sync API endpoints for offline-first InfoPOS app
+// GET /api/sync?table=products - Fetch data
+// POST /api/sync?table=sales - Push data
+// GET /api/sync/health - Health check
+Route::get('/api/sync/health', [SyncController::class, 'healthCheck']);
+Route::get('/api/sync', [SyncController::class, 'fetch']);
+Route::post('/api/sync', [SyncController::class, 'push']);
+
+// Store config endpoint
+Route::get('/api/stores/{storeId}', [SyncController::class, 'getStoreConfig']);
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -87,6 +100,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/productbatch/{id}', [ProductController::class, 'updateBatch'])->name('products.updatebatch');
     Route::get('/getproducts/{store_id}', [ProductController::class, 'getProductsResponse'])->name('products.getproducts');
     Route::get('/product/{batch_id}/barcode', [ProductController::class, 'getBarcode'])->name('products.barcode');
+    Route::get('/product/{batch_id}/barcode-v2', [ProductController::class, 'barcodeV2'])->name('products.barcode-v2');
 
     Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
     Route::get('/pos/debug', [POSController::class, 'debugProducts'])->name('pos.debug'); // Debug route
@@ -133,6 +147,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/module/{action}', [SettingController::class, 'updateModule']);
     Route::post('/settings/get-template', [SettingController::class, 'getTemplate'])->name('settings.gettemplate');
     Route::post('/settings/save-template', [SettingController::class, 'saveTemplate'])->name('settings.savetemplate');
+
+    Route::get('/api/barcode-template', [SettingController::class, 'getBarcodeTemplate'])->name('barcode.template.get');
+    Route::post('/api/barcode-template', [SettingController::class, 'saveBarcodeTemplate'])->name('barcode.template.save');
+    Route::post('/api/barcode-template/preview', [SettingController::class, 'renderBarcodeTemplatePreview'])->name('barcode.template.preview');
 
     Route::get('/charges', [ChargeController::class, 'index'])->name('charges.index');
     Route::post('/charges', [ChargeController::class, 'store'])->name('charges.store');
@@ -183,8 +201,18 @@ Route::middleware('auth')->group(function () {
         return 'Linked with storage';
     });
 
-    Route::get('/update', [UpgradeController::class, 'showUploadForm'])->name('upload.form');
+    // Maintenance Routes
+    Route::get('/maintenance', [UpgradeController::class, 'showMaintenance'])->name('maintenance.index');
+    Route::post('/upload-v2', [UpgradeController::class, 'handleUploadV2'])->name('maintenance.upload');
+Route::get('/update', [UpgradeController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [UpgradeController::class, 'handleUpload'])->name('upload.handle');
+    
+    // Database Management Routes
+    Route::get('/api/maintenance/database/tables', [UpgradeController::class, 'getDatabaseTables']);
+    Route::get('/api/maintenance/database/migrations', [UpgradeController::class, 'getMigrationStatus']);
+    Route::post('/api/maintenance/database/migrate', [UpgradeController::class, 'runMigrations']);
+    Route::post('/api/maintenance/database/seed', [UpgradeController::class, 'runSeeders']);
+    Route::get('/api/maintenance/database/backup', [UpgradeController::class, 'backupDatabase']);
 
     Route::get('/media', [MediaController::class, 'index']);
     Route::get('/migrate-images', [MediaController::class, 'migrateImages']);
