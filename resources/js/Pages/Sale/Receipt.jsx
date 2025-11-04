@@ -252,7 +252,7 @@ export default function Receipt({ sale, salesItems, settings, user_name, credit_
                     >
                         <ReceiptPrintContainer square={false}>
                             <Box className="flex flex-col items-center justify-center mt-0">
-                                <Card sx={{ width: 160, boxShadow: 0 }}>
+                                <Card sx={{ width: 200, boxShadow: 0 }}>
                                     <CardMedia
                                         component="img"
                                         image={
