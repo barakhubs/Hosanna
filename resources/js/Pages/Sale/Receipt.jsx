@@ -170,7 +170,7 @@ export default function Receipt({ sale, salesItems, settings, user_name, credit_
 
     if (!sale || Object.keys(sale).length === 0) {
         return (
-            <Box className="flex justify-center mt-10 p-0">
+            <Box className="flex justify-center p-0 mt-10">
                 <Typography variant="h6" color="error">
                     No pending sales available.
                 </Typography>
@@ -192,9 +192,9 @@ export default function Receipt({ sale, salesItems, settings, user_name, credit_
     return (
         <>
             <Head title="Sale Receipt" />
-            <Box className="flex justify-center mt-10 p-0 text-black">
+            <Box className="flex justify-center p-0 mt-10 text-black">
                 <ReceiptContainer square={false} className="receipt-container">
-                    <Box className="flex justify-between mb-3 print:hidden text-black">
+                    <Box className="flex justify-between mb-3 text-black print:hidden">
 
                         {user && (
                             <Button
@@ -251,7 +251,7 @@ export default function Receipt({ sale, salesItems, settings, user_name, credit_
                         style={styles.printArea}
                     >
                         <ReceiptPrintContainer square={false}>
-                            <Box className="flex justify-center items-center mt-0 flex-col">
+                            <Box className="flex flex-col items-center justify-center mt-0">
                                 <Card sx={{ width: 160, boxShadow: 0 }}>
                                     <CardMedia
                                         component="img"
@@ -260,6 +260,16 @@ export default function Receipt({ sale, salesItems, settings, user_name, credit_
                                             "/" +
                                             settings.shop_logo
                                         }
+                                        sx={{
+                                            '@media print': {
+                                                filter: 'grayscale(100%) contrast(120%) brightness(0.8)',
+                                                '-webkit-print-color-adjust': 'exact',
+                                                'print-color-adjust': 'exact',
+                                                opacity: 1,
+                                                display: 'block !important',
+                                                visibility: 'visible !important'
+                                            }
+                                        }}
                                     />
                                 </Card>
                                 {settings.show_receipt_shop_name == 1 && (
@@ -300,7 +310,7 @@ export default function Receipt({ sale, salesItems, settings, user_name, credit_
                                 }}
                                 className="receipt-divider-after-address"
                             />
-                            <Box className="flex items-start flex-col justify-start receipt-meta text-black">
+                            <Box className="flex flex-col items-start justify-start text-black receipt-meta">
 
 
                                 {!credit_sale && (
@@ -852,7 +862,7 @@ export default function Receipt({ sale, salesItems, settings, user_name, credit_
                                 }}
                                 className="receipt-divider-before-footer"
                             />
-                            <div className="receipt-barcode flex justify-center">
+                            <div className="flex justify-center receipt-barcode">
                                 <Barcode value={sale.invoice_number} />
                             </div>
 
