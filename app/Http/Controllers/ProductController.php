@@ -596,4 +596,43 @@ class ProductController extends Controller
             'product' => $product,
         ]);
     }
+
+    public function destroy($id)
+    {
+        try {
+            $product = Product::find($id);
+
+            if (!$product) {
+                return response()->json(['message' => 'Product not found'], 404);
+            }
+
+            // Delete associated image if it exists
+            if ($product->attachment_id) {
+                $attachment = Attachment::find($product->attachment_id);
+                if ($attachment) {
+                    // Delete the file from storage
+                    Storage::disk('public')->delete($attachment->path);
+                    // Delete the attachment record
+                    $attachment->delete();
+                }
+            }
+
+            // Delete associated product batches and their stocks
+            $batches = ProductBatch::where('product_id', $id)->get();
+            foreach ($batches as $batch) {
+                // Delete associated product stocks
+                ProductStock::where('batch_id', $batch->id)->delete();
+            }
+
+            // Delete product batches
+            ProductBatch::where('product_id', $id)->delete();
+
+            // Delete the product itself
+            $product->delete();
+
+            return redirect()->back()->with('success', 'Product deleted successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to delete product: ' . $e->getMessage()]);
+        }
+    }
 }

@@ -10,9 +10,12 @@ import {
     MenuItem,
     TextField,
     Chip,
+    IconButton,
+    Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { Link, router } from "@inertiajs/react";
 import FindReplaceIcon from "@mui/icons-material/FindReplace";
 import HistoryIcon from '@mui/icons-material/History';
@@ -21,6 +24,7 @@ import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { Barcode } from 'lucide-react';
 import BatchModal from "./Partials/BatchModal";
 import QuantityModal from "./Partials/QuantityModal";
+import DeleteProductModal from "./Partials/DeleteProductModal";
 import CustomPagination from "@/Components/CustomPagination";
 import { useState } from "react";
 import numeral from "numeral";
@@ -31,7 +35,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import ProductsList from "./Partials/ProductsList";
 
-const productColumns = (handleProductEdit) => [
+const productColumns = (handleProductEdit, handleDeleteProduct) => [
     {
         field: "image_url",
         headerName: "Image",
@@ -165,7 +169,7 @@ const productColumns = (handleProductEdit) => [
         headerName: "Action",
         align: "center",
         headerAlign: "center",
-        width: 200,
+        width: 250,
         renderCell: (params) => {
             return (
                 <Box
@@ -186,6 +190,17 @@ const productColumns = (handleProductEdit) => [
                     <Link href={`/quantity/${params.row.stock_id}/log`}>
                         <HistoryIcon color="primary" />
                     </Link>
+                    <Tooltip title="Delete Product">
+                        <IconButton
+                            size="small"
+                            onClick={() => handleDeleteProduct(params.row)}
+                            sx={{
+                                color: 'error.main'
+                            }}
+                        >
+                            <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
                 </Box>
             );
         },
@@ -228,7 +243,9 @@ export default function Product({ products, stores, contacts }) {
     const auth = usePage().props.auth.user;
     const [batchModalOpen, setBatchModalOpen] = useState(false);
     const [quantityModalOpen, setQuantityModalOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(false);
+    const [productToDelete, setProductToDelete] = useState(null);
     const [dataProducts, setDataProducts] = useState(products);
     const [dataContacts, setContacts] = useState(contacts);
     const [totalValuation, setTotalValuation] = useState(0);
@@ -251,6 +268,16 @@ export default function Product({ products, stores, contacts }) {
         setSelectedProduct(product);
         type === "batch" && setBatchModalOpen(true);
         type === "qty" && setQuantityModalOpen(true);
+    };
+
+    const handleDeleteProduct = (product) => {
+        setProductToDelete(product);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        // Refresh the products list after successful delete
+        refreshProducts();
     };
 
     const refreshProducts = (url = window.location.pathname) => {
@@ -441,7 +468,7 @@ export default function Product({ products, stores, contacts }) {
 
                 {!isMobile && (
                     <Box
-                        className="py-2 w-full"
+                        className="w-full py-2"
                         sx={{
                             display: "grid",
                             gridTemplateColumns: "1fr",
@@ -450,7 +477,7 @@ export default function Product({ products, stores, contacts }) {
                     >
                         <DataGrid
                             rows={dataProducts.data}
-                            columns={productColumns(handleProductEdit)}
+                            columns={productColumns(handleProductEdit, handleDeleteProduct)}
                             getRowId={(row) =>
                                 row.id + row.batch_number + row.store_id
                             }
@@ -522,6 +549,12 @@ export default function Product({ products, stores, contacts }) {
                 setProducts={setDataProducts}
                 refreshProducts={refreshProducts}
                 stores={stores}
+            />
+            <DeleteProductModal
+                open={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                product={productToDelete}
+                onConfirmDelete={handleConfirmDelete}
             />
         </AuthenticatedLayout>
     );

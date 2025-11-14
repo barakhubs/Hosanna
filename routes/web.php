@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{id}/edit', [ProductController::class, 'find'])->name('products.find');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::post('/products/{id}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
     Route::get('/products/search', [ProductController::class, 'searchProduct'])->name('products.search');
     Route::post('/storebatch', [ProductController::class, 'storeNewBatch'])->name('products.newbatch');
     Route::post('/checkBatch', [ProductController::class, 'checkBatch'])->name('products.checkbatch');
@@ -204,9 +205,9 @@ Route::middleware('auth')->group(function () {
     // Maintenance Routes
     Route::get('/maintenance', [UpgradeController::class, 'showMaintenance'])->name('maintenance.index');
     Route::post('/upload-v2', [UpgradeController::class, 'handleUploadV2'])->name('maintenance.upload');
-Route::get('/update', [UpgradeController::class, 'showUploadForm'])->name('upload.form');
+    Route::get('/update', [UpgradeController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [UpgradeController::class, 'handleUpload'])->name('upload.handle');
-    
+
     // Database Management Routes
     Route::get('/api/maintenance/database/tables', [UpgradeController::class, 'getDatabaseTables']);
     Route::get('/api/maintenance/database/migrations', [UpgradeController::class, 'getMigrationStatus']);
