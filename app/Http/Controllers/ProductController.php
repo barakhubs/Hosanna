@@ -147,11 +147,27 @@ class ProductController extends Controller
         $collection = Collection::select('id', 'name', 'collection_type')->get();
         $product = Product::findOrFail($id);
 
+        // Get the latest batch for this product to show cost and price
+        $latestBatch = ProductBatch::where('product_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
         $metaData = $product->meta_data;
         if (in_array($product->product_type, ['reload', 'commission']) && isset($metaData['fixed_commission'])) {
             $product->fixed_commission = $metaData['fixed_commission'];
         }
         $product->meta_data = $metaData;
+
+        // Add batch information to product for editing
+        if ($latestBatch) {
+            $product->cost = $latestBatch->cost;
+            $product->price = $latestBatch->price;
+            $product->batch_number = $latestBatch->batch_number;
+            $product->batch_id = $latestBatch->id;
+            $product->discount = $latestBatch->discount;
+            $product->discount_percentage = $latestBatch->discount_percentage;
+            $product->expiry_date = $latestBatch->expiry_date;
+        }
 
         if (!empty($product->image_url)) {
             // If the image URL exists and is not empty
@@ -267,6 +283,8 @@ class ProductController extends Controller
             'is_active' => 'boolean',
             'brand_id' => 'nullable|exists:collections,id',
             'category_id' => 'nullable|exists:collections,id',
+            'cost' => 'nullable|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -327,6 +345,33 @@ class ProductController extends Controller
                 'product_type' => $request->product_type,
                 'meta_data' => $metaData,
             ]);
+
+            // Update batch information if cost and price are provided
+            if ($request->has('cost') || $request->has('price')) {
+                $latestBatch = ProductBatch::where('product_id', $id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($latestBatch) {
+                    $batchData = [];
+                    if ($request->has('cost') && $request->cost !== null) {
+                        $batchData['cost'] = $request->cost;
+                    }
+                    if ($request->has('price') && $request->price !== null) {
+                        $batchData['price'] = $request->price;
+                    }
+                    if ($request->has('discount')) {
+                        $batchData['discount'] = $request->discount;
+                    }
+                    if ($request->has('discount_percentage')) {
+                        $batchData['discount_percentage'] = $request->discount_percentage;
+                    }
+
+                    if (!empty($batchData)) {
+                        $latestBatch->update($batchData);
+                    }
+                }
+            }
 
             DB::commit();
 

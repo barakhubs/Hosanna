@@ -99,6 +99,7 @@ export default function Product({ product, collection, product_code, contacts, p
         batch_number: dayjs().format('DDMMYYYY'), // Initial value for batch number
         discount: 0,
         discount_percentage: 0,
+        cost: '',
         price: '',
     });
 
@@ -172,6 +173,11 @@ export default function Product({ product, collection, product_code, contacts, p
                 category_id: product.category_id || "",
                 product_type: product.product_type || "simple",
                 fixed_commission: product.fixed_commission || 0,
+                cost: product.cost || "",
+                price: product.price || "",
+                batch_number: product.batch_number || "",
+                discount: product.discount || 0,
+                discount_percentage: product.discount_percentage || 0,
             });
             setManageStock(product.is_stock_managed.toString());
 
@@ -358,43 +364,43 @@ export default function Product({ product, collection, product_code, contacts, p
                         </Typography>
                     </Box>
                     <Grid container spacing={2}>
+                        <Grid size={{ xs: 6, sm: 2 }} className="mb-3">
+                            <TextField
+                                size="large"
+                                label="Cost"
+                                name="cost"
+                                type="number"
+                                fullWidth
+                                required
+                                step={0.5}
+                                slotProps={{
+                                    input: {
+                                        step: 0.5,
+                                    },
+                                }}
+                                value={productFormData.cost}
+                                onChange={handleChange}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 2 }} className="mb-3">
+                            <TextField
+                                size="large"
+                                label="Price"
+                                name="price"
+                                type="number"
+                                fullWidth
+                                required
+                                slotProps={{
+                                    input: {
+                                        min: 0,
+                                    },
+                                }}
+                                value={productFormData.price}
+                                onChange={handleChange}
+                            />
+                        </Grid>
                         {!product && (
                             <>
-                                <Grid size={{ xs: 6, sm: 2 }} className="mb-3">
-                                    <TextField
-                                        size="large"
-                                        label="Cost"
-                                        name="cost"
-                                        type="number"
-                                        fullWidth
-                                        required
-                                        step={0.5}
-                                        slotProps={{
-                                            input: {
-                                                step: 0.5,
-                                            },
-                                        }}
-                                        value={productFormData.cost}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
-                                <Grid size={{ xs: 6, sm: 2 }} className="mb-3">
-                                    <TextField
-                                        size="large"
-                                        label="Price"
-                                        name="price"
-                                        type="number"
-                                        fullWidth
-                                        required
-                                        slotProps={{
-                                            input: {
-                                                min: 0,
-                                            },
-                                        }}
-                                        value={productFormData.price}
-                                        onChange={handleChange}
-                                    />
-                                </Grid>
                                 <Grid size={{ xs: 6, sm: 2 }} className="mb-3">
                                     <TextField
                                         size="large"
