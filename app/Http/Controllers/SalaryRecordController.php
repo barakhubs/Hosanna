@@ -120,12 +120,7 @@ class SalaryRecordController extends Controller
             // Rollback transaction in case of error
             DB::rollBack();
 
-            Log::error('Transaction failed', [
-                'error_message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logError('Transaction failed', $e);
 
             // Return error response
             return response()->json(['error' => $this->errorMessage($e)], 500);
@@ -172,12 +167,7 @@ class SalaryRecordController extends Controller
             // Rollback transaction in case of error
             DB::rollBack();
 
-            Log::error('Transaction failed', [
-                'error_message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $this->logError('Transaction failed', $e);
 
             // Return error response
             return response()->json(['error' => $this->errorMessage($e)], 500);

@@ -380,6 +380,7 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             // Rollback the transaction if something failed
             DB::rollBack();
+            $this->logError('Product update failed', $e);
 
             // Return an error response
             return redirect()->back()->withErrors(['error' => 'Failed to update product: ' . $this->errorMessage($e)]);
@@ -677,6 +678,7 @@ class ProductController extends Controller
 
             return redirect()->back()->with('success', 'Product deleted successfully');
         } catch (\Exception $e) {
+            $this->logError('Product delete failed', $e);
             return redirect()->back()->withErrors(['error' => 'Failed to delete product: ' . $this->errorMessage($e)]);
         }
     }

@@ -90,7 +90,7 @@ class ReloadController extends Controller
                 'message' => 'Account number updated successfully!'
             ], 200);
         } catch (\Exception $e) {
-            // Handle any errors and send failure response
+            $this->logError('Reload update failed', $e);
             return response()->json([
                 'message' => $this->errorMessage($e)
             ], 500);

@@ -397,6 +397,7 @@ class SyncController extends Controller
                 $this->createOrUpdateSale($saleData, $storeId);
                 $synced++;
             } catch (\Exception $e) {
+                $this->logError('Sync sale failed', $e);
                 $errors[] = [
                     'invoice_number' => $saleData['invoice_number'] ?? 'unknown',
                     'error' => $this->errorMessage($e)
@@ -450,6 +451,7 @@ class SyncController extends Controller
             return response()->json(['status' => 'success', 'synced' => $synced]);
         } catch (\Exception $e) {
             DB::rollBack();
+            $this->logError('Sync push failed', $e);
             return response()->json(['status' => 'error', 'message' => $this->errorMessage($e)], 500);
         }
     }
@@ -487,6 +489,7 @@ class SyncController extends Controller
             return response()->json(['status' => 'success', 'synced' => $synced]);
         } catch (\Exception $e) {
             DB::rollBack();
+            $this->logError('Sync push failed', $e);
             return response()->json(['status' => 'error', 'message' => $this->errorMessage($e)], 500);
         }
     }
@@ -523,6 +526,7 @@ class SyncController extends Controller
             return response()->json(['status' => 'success', 'updated' => $updated]);
         } catch (\Exception $e) {
             DB::rollBack();
+            $this->logError('Sync push failed', $e);
             return response()->json(['status' => 'error', 'message' => $this->errorMessage($e)], 500);
         }
     }

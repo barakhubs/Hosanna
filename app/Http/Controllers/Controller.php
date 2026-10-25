@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
+
 abstract class Controller
 {
     /**
@@ -16,5 +18,18 @@ abstract class Controller
         }
 
         return $fallback;
+    }
+
+    protected function logError(string $message, \Throwable $e): void
+    {
+        Log::error($message, [
+            'error_message' => $e->getMessage(),
+            'exception' => get_class($e),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'user_id' => auth()->id(),
+            'url' => request()->fullUrl(),
+            'trace' => $e->getTraceAsString(),
+        ]);
     }
 }

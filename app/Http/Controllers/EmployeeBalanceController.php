@@ -154,12 +154,7 @@ class EmployeeBalanceController extends Controller
             DB::rollBack();
 
             // Log the error details
-            Log::error('Balance transaction failed', [
-                'error_message' => $e->getMessage(),
-                'file'          => $e->getFile(),
-                'line'          => $e->getLine(),
-                'trace'         => $e->getTraceAsString(),
-            ]);
+            $this->logError('Balance transaction failed', $e);
 
             // Return error response
             return response()->json(['error' => 'Failed to update balance'], 500);
