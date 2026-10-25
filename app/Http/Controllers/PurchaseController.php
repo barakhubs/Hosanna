@@ -9,7 +9,7 @@ use App\Models\Store;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\ProductBatch;
-use App\Models\ProductStock;
+use App\Services\Inventory\StockService;
 use App\Models\PurchaseTransaction;
 
 use Illuminate\Support\Facades\DB;
@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
+    public function __construct(private StockService $stock)
+    {
+    }
 
     public function getPurchases($filters)
     {
@@ -160,21 +163,7 @@ class PurchaseController extends Controller
 
                 if ($item['product_type'] == 'simple') { //Custom product does not have stock
 
-                    // Retrieve or create the product stock using store_id and batch_id
-                    $productStock = ProductStock::firstOrCreate(
-                        [
-                            'store_id' => $purchase->store_id,
-                            'batch_id' => $batch_id,
-                            'product_id' => $item['id'],
-                        ],
-                        [
-                            'quantity' => 0,  // Initial quantity for new stock
-                        ]
-                    );
-
-                    // Update the quantity in stock
-                    $productStock->quantity += $item['quantity'];
-                    $productStock->save();
+                    $this->stock->receive($purchase->store_id, $batch_id, $item['id'], $item['quantity']);
                 }
             }
 
