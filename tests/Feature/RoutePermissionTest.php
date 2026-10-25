@@ -69,4 +69,20 @@ class RoutePermissionTest extends TestCase
         $this->actingAs($this->admin)->get('/users')->assertOk();
         $this->actingAs($this->makeUser('super-admin'))->get('/users')->assertOk();
     }
+
+    public function test_system_routes_are_for_admins_only(): void
+    {
+        $uris = ['/maintenance', '/update', '/api/maintenance/database/migrations', '/clear-cache', '/link-storage', '/backup-now'];
+
+        $this->actingAs($this->roleWith('manager', Permission::pluck('name')->all()));
+        foreach ($uris as $uri) {
+            $this->getJson($uri)->assertForbidden();
+        }
+        $this->postJson('/api/maintenance/database/migrate')->assertForbidden();
+        $this->postJson('/api/maintenance/database/seed')->assertForbidden();
+        $this->postJson('/upload-v2')->assertForbidden();
+
+        $this->actingAs($this->admin)->get('/maintenance')->assertOk();
+        $this->actingAs($this->makeUser('super-admin'))->get('/maintenance')->assertOk();
+    }
 }

@@ -58,18 +58,6 @@ class RouteAccessTest extends TestCase
         $this->getJson('/api/stores/1')->assertStatus(500);
     }
 
-    public function test_cashier_can_reach_admin_pages(): void
-    {
-        $cashier = $this->makeUser('user');
-
-        $this->actingAs($cashier);
-        $this->get('/settings')->assertForbidden();
-        $this->get('/users')->assertForbidden();
-        $this->get('/maintenance')->assertOk();
-        // 500 on sqlite, but the point is nothing stops a cashier from calling it
-        $this->assertNotContains($this->getJson('/api/maintenance/database/tables')->status(), [302, 401, 403]);
-    }
-
     public function test_receipts_are_public(): void
     {
         $this->get('/receipt/999')->assertNotFound();

@@ -201,23 +201,40 @@ Route::middleware('auth')->group(function () {
     Route::get('/reloads', [ReloadController::class, 'index'])->middleware('permission:reloads');
     Route::post('/reloads/{id}/update', [ReloadController::class, 'update'])->middleware('permission:reloads');
 
-    Route::get('/link-storage', function () {
-        Artisan::call('storage:link');
-        return 'Linked with storage';
+    // System routes: same admins who see these tools on the dashboard
+    Route::middleware('user.role:admin,super-admin')->group(function () {
+        Route::get('/link-storage', function () {
+            Artisan::call('storage:link');
+            return 'Linked with storage';
+        });
+
+        // Maintenance Routes
+        Route::get('/maintenance', [UpgradeController::class, 'showMaintenance'])->name('maintenance.index');
+        Route::post('/upload-v2', [UpgradeController::class, 'handleUploadV2'])->name('maintenance.upload');
+        Route::get('/update', [UpgradeController::class, 'showUploadForm'])->name('upload.form');
+        Route::post('/upload', [UpgradeController::class, 'handleUpload'])->name('upload.handle');
+
+        // Database Management Routes
+        Route::get('/api/maintenance/database/tables', [UpgradeController::class, 'getDatabaseTables']);
+        Route::get('/api/maintenance/database/migrations', [UpgradeController::class, 'getMigrationStatus']);
+        Route::post('/api/maintenance/database/migrate', [UpgradeController::class, 'runMigrations']);
+        Route::post('/api/maintenance/database/seed', [UpgradeController::class, 'runSeeders']);
+        Route::get('/api/maintenance/database/backup', [UpgradeController::class, 'backupDatabase']);
+
+        Route::get('/clear-cache', function () {
+            Artisan::call('cache:clear');
+            Artisan::call('config:clear');
+            Artisan::call('route:clear');
+            Artisan::call('view:clear');
+            Artisan::call('event:clear');
+            Artisan::call('optimize:clear');
+
+            return 'All caches cleared and configurations updated!';
+        });
+
+        Route::get('/download-backup/{file}', [BackupController::class, 'download']);
+        Route::get('/backup-now', [BackupController::class, 'downloadBackupZip']);
     });
-
-    // Maintenance Routes
-    Route::get('/maintenance', [UpgradeController::class, 'showMaintenance'])->name('maintenance.index');
-    Route::post('/upload-v2', [UpgradeController::class, 'handleUploadV2'])->name('maintenance.upload');
-    Route::get('/update', [UpgradeController::class, 'showUploadForm'])->name('upload.form');
-    Route::post('/upload', [UpgradeController::class, 'handleUpload'])->name('upload.handle');
-
-    // Database Management Routes
-    Route::get('/api/maintenance/database/tables', [UpgradeController::class, 'getDatabaseTables']);
-    Route::get('/api/maintenance/database/migrations', [UpgradeController::class, 'getMigrationStatus']);
-    Route::post('/api/maintenance/database/migrate', [UpgradeController::class, 'runMigrations']);
-    Route::post('/api/maintenance/database/seed', [UpgradeController::class, 'runSeeders']);
-    Route::get('/api/maintenance/database/backup', [UpgradeController::class, 'backupDatabase']);
 
     Route::get('/media', [MediaController::class, 'index'])->middleware('permission:media');
     Route::get('/migrate-images', [MediaController::class, 'migrateImages'])->middleware('permission:media');
@@ -244,23 +261,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('sale-templates', SaleTemplateController::class)->middleware('permission:pos');
 
-    Route::get('/clear-cache', function () {
-        Artisan::call('cache:clear');
-        Artisan::call('config:clear');
-        Artisan::call('route:clear');
-        Artisan::call('view:clear');
-        Artisan::call('event:clear');
-        Artisan::call('optimize:clear');
-
-        return 'All caches cleared and configurations updated!';
-    });
-
     Route::get('/check-update', function () {
         return 'Update';
     });
-
-    Route::get('/download-backup/{file}', [BackupController::class, 'download']);
-    Route::get('/backup-now', [BackupController::class, 'downloadBackupZip']);
 
     Route::post('/test-mail', function (Request $request) {
         Mail::raw('Test email', function ($message) use ($request) {
