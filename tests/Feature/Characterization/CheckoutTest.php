@@ -194,11 +194,10 @@ class CheckoutTest extends TestCase
             ->assertStatus(400)
             ->assertJson(['error' => 'Account number is required for reload product type.']);
 
-        // The early return skips the rollback and leaves the transaction open
-        $this->assertSame($this->baseTransactionLevel + 1, DB::transactionLevel());
-        while (DB::transactionLevel() > $this->baseTransactionLevel) {
-            DB::rollBack();
-        }
+        // nothing from the failed sale is kept and the transaction is closed
+        $this->assertSame($this->baseTransactionLevel, DB::transactionLevel());
+        $this->assertSame(0, Sale::withTrashed()->count());
+        $this->assertSame(0, Transaction::count());
     }
 
     public function test_reload_item_stores_meta(): void

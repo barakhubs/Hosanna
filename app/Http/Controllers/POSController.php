@@ -447,7 +447,7 @@ class POSController extends Controller
                     ]);
 
                     if ($validator->fails()) {
-                        // If validation fails, return an error response
+                        DB::rollBack();
                         return response()->json([
                             'error' => 'Account number is required for reload product type.',
                             'messages' => $validator->errors(),

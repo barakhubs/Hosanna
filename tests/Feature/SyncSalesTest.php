@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Sale;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\Concerns\SeedsPos;
 use Tests\TestCase;
@@ -71,5 +72,32 @@ class SyncSalesTest extends TestCase
             'synced' => 0,
             'errors' => [['invoice_number' => 'OFF-2', 'error' => 'Stock for product not found in the specified store or batch']],
         ]);
+    }
+
+    public function test_a_bad_reload_does_not_swallow_the_next_sale(): void
+    {
+        $reload = $this->stockFor([], 10, ['product_type' => 'reload']);
+        $normal = $this->stockFor(['price' => 100], 10);
+
+        $sale = fn (string $invoice, array $item) => [
+            'invoice_number' => $invoice,
+            'contact_id' => $this->customer->id,
+            'total_amount' => 100,
+            'items' => [$item],
+            'transactions' => [['payment_method' => 'Cash', 'amount' => 100]],
+        ];
+
+        $this->postJson('/api/sync?table=sales', [
+            'store_id' => 1,
+            'sales' => [
+                $sale('OFF-1', ['product_id' => $reload->product_id, 'batch_id' => $reload->batch_id, 'quantity' => 1, 'price' => 100, 'cost' => 90, 'product_type' => 'reload', 'is_stock_managed' => 0]),
+                $sale('OFF-2', ['product_id' => $normal->product_id, 'batch_id' => $normal->batch_id, 'quantity' => 1, 'price' => 100, 'cost' => 60]),
+            ],
+        ])->assertOk()->assertJson(['status' => 'partial', 'synced' => 1]);
+
+        // only the test's own wrapping transaction is left open
+        $this->assertSame(1, DB::transactionLevel());
+        $this->assertSame(1, Sale::count());
+        $this->assertEquals(9, $normal->fresh()->quantity);
     }
 }
