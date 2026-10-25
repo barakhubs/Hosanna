@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\Concerns\SeedsPos;
 use Tests\TestCase;
 
@@ -16,6 +17,7 @@ class SyncStoreIdTest extends TestCase
         parent::setUp();
 
         $this->seedPos();
+        Sanctum::actingAs($this->admin);
     }
 
     public function test_fetch_rejects_bad_store_id(): void

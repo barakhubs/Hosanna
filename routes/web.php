@@ -63,12 +63,16 @@ Route::post('/api/application-update-v2', [UpgradeController::class, 'applicatio
 // GET /api/sync?table=products - Fetch data
 // POST /api/sync?table=sales - Push data
 // GET /api/sync/health - Health check
+// Everything except health needs a Sanctum token (php artisan pos:token)
 Route::get('/api/sync/health', [SyncController::class, 'healthCheck']);
-Route::get('/api/sync', [SyncController::class, 'fetch']);
-Route::post('/api/sync', [SyncController::class, 'push']);
 
-// Store config endpoint
-Route::get('/api/stores/{storeId}', [SyncController::class, 'getStoreConfig']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/api/sync', [SyncController::class, 'fetch']);
+    Route::post('/api/sync', [SyncController::class, 'push']);
+
+    // Store config endpoint
+    Route::get('/api/stores/{storeId}', [SyncController::class, 'getStoreConfig']);
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
