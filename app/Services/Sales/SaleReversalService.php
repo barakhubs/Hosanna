@@ -29,9 +29,8 @@ class SaleReversalService
         $sale->loadMissing('saleItems.product');
 
         foreach ($sale->saleItems as $item) {
-            $product = $item->product;
-
-            if ($product->is_stock_managed) {
+            // charge lines have no product, so there is no stock to put back
+            if ($item->product?->is_stock_managed) {
                 $restoreQty = $item->quantity + ($item->free_quantity ?? 0);
                 $this->stock->restore($sale->store_id, $item->batch_id, $restoreQty);
             }
@@ -60,9 +59,8 @@ class SaleReversalService
         $sale->loadMissing('saleItems.product');
 
         foreach ($sale->saleItems as $item) {
-            $product = $item->product;
-
-            if ($product->is_stock_managed) {
+            // charge lines have no product, so there is no stock to put back
+            if ($item->product?->is_stock_managed) {
                 $this->stock->restore($sale->store_id, $item->batch_id, $item->quantity);
             }
             $item->delete();
