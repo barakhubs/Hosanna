@@ -28,19 +28,6 @@ use App\Models\Charge;
 
 class POSController extends Controller
 {
-    // Debug method to test POS products query
-    public function debugProducts(Request $request)
-    {
-        $products = $this->getProducts();
-
-        return response()->json([
-            'products_count' => $products->count(),
-            'products' => $products->toArray(),
-            'session_store_id' => session('store_id'),
-            'user_store_id' => Auth::check() ? Auth::user()->store_id : 'not authenticated',
-            'current_store_id' => session('store_id') ?? (Auth::check() ? Auth::user()->store_id : 1),
-        ]);
-    }
     public function getProducts($filters = [])
     {
         $imageUrl = '/storage/';

@@ -85,4 +85,13 @@ class RoutePermissionTest extends TestCase
         $this->actingAs($this->admin)->get('/maintenance')->assertOk();
         $this->actingAs($this->makeUser('super-admin'))->get('/maintenance')->assertOk();
     }
+
+    public function test_debug_routes_are_gone_and_editor_needs_login(): void
+    {
+        $this->get('/editor')->assertRedirect('/login');
+
+        $this->actingAs($this->admin);
+        $this->get('/pos/debug')->assertNotFound();
+        $this->get('/check-update')->assertNotFound();
+    }
 }

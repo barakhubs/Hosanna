@@ -44,10 +44,6 @@ Route::get('/', function () {
     // ]);
 });
 
-Route::get('/editor', function () {
-    return Inertia::render('BlockEditor/Editor');
-});
-
 Route::get('/receipt/{id}', [SaleController::class, 'receipt'])->name('sales.receipt');
 Route::get('/api/receipt-text-raw/{id}', [SaleController::class, 'apiReceipt']);
 Route::get('/pending-sales-receipt/{contact_id}', [SaleController::class, 'pendingSalesReceipt']);
@@ -75,6 +71,10 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/editor', function () {
+        return Inertia::render('BlockEditor/Editor');
+    });
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -108,7 +108,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/product/{batch_id}/barcode-v2', [ProductController::class, 'barcodeV2'])->name('products.barcode-v2')->middleware('permission:products');
 
     Route::get('/pos', [POSController::class, 'index'])->name('pos.index')->middleware('permission:pos');
-    Route::get('/pos/debug', [POSController::class, 'debugProducts'])->name('pos.debug'); // Debug route
     Route::get('/pos/{sale_id}/return', [POSController::class, 'returnIndex'])->name('pos.return')->middleware('permission:pos,sales,sold-items');
     Route::post('/pos/checkout', [POSController::class, 'checkout'])->name('pos.checkout')->middleware('permission:pos');
     Route::get('/pos/customer-display', [POSController::class, 'customerDisplay'])->middleware('permission:pos');
@@ -260,10 +259,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventory-logs', [InventoryController::class, 'inventoryLogs'])->middleware('permission:inventory');
 
     Route::resource('sale-templates', SaleTemplateController::class)->middleware('permission:pos');
-
-    Route::get('/check-update', function () {
-        return 'Update';
-    });
 
     Route::post('/test-mail', function (Request $request) {
         Mail::raw('Test email', function ($message) use ($request) {
