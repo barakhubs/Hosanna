@@ -87,13 +87,12 @@ class SyncController extends Controller
      */
     private function getProducts(Request $request)
     {
-        $storeId = $request->query('store_id', 1);
+        $storeId = (int) $request->query('store_id', 1);
         $lastSync = $this->parseTimestamp($request->query('last_sync'));
 
         $query = Product::query()
             ->select(
                 'products.id',
-                DB::raw("{$storeId} AS store_id"),
                 'products.name',
                 'products.description',
                 'products.sku',
@@ -138,10 +137,10 @@ class SyncController extends Controller
             });
         }
 
-        $products = $query->get()->map(function ($product) {
+        $products = $query->get()->map(function ($product) use ($storeId) {
             return [
                 'id' => $product->id,
-                'store_id' => (string) $product->store_id,
+                'store_id' => (string) $storeId,
                 'name' => $product->name,
                 'description' => $product->description,
                 'sku' => $product->sku,
