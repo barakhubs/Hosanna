@@ -63,8 +63,8 @@ class RouteAccessTest extends TestCase
         $cashier = $this->makeUser('user');
 
         $this->actingAs($cashier);
-        $this->get('/settings')->assertOk();
-        $this->get('/users')->assertOk();
+        $this->get('/settings')->assertForbidden();
+        $this->get('/users')->assertForbidden();
         $this->get('/maintenance')->assertOk();
         // 500 on sqlite, but the point is nothing stops a cashier from calling it
         $this->assertNotContains($this->getJson('/api/maintenance/database/tables')->status(), [302, 401, 403]);

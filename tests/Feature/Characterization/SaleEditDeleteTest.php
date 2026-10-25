@@ -110,12 +110,14 @@ class SaleEditDeleteTest extends TestCase
         $stock = $this->stockFor();
         $saleId = $this->checkout(['payment_method' => 'Cash', 'net_total' => 100, 'cartItems' => [$this->cartItem($stock)]])->json('sale_id');
 
-        foreach (['user', 'super-admin'] as $role) {
-            $this->actingAs($this->makeUser($role))
-                ->deleteJson("/sales/{$saleId}")
-                ->assertStatus(403)
-                ->assertJson(['error' => 'You are not authorized to delete a sale']);
-        }
+        // users without the sales permission are stopped by the route
+        $this->actingAs($this->makeUser('user'))->deleteJson("/sales/{$saleId}")->assertStatus(403);
+
+        // super-admin has the permission but the controller only allows the admin role
+        $this->actingAs($this->makeUser('super-admin'))
+            ->deleteJson("/sales/{$saleId}")
+            ->assertStatus(403)
+            ->assertJson(['error' => 'You are not authorized to delete a sale']);
 
         $this->assertNotNull(Sale::find($saleId));
     }
