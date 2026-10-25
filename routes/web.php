@@ -64,9 +64,9 @@ Route::post('/api/application-update-v2', [UpgradeController::class, 'applicatio
 // POST /api/sync?table=sales - Push data
 // GET /api/sync/health - Health check
 // Everything except health needs a Sanctum token (php artisan pos:token)
-Route::get('/api/sync/health', [SyncController::class, 'healthCheck']);
+Route::get('/api/sync/health', [SyncController::class, 'healthCheck'])->middleware('throttle:60,1');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::get('/api/sync', [SyncController::class, 'fetch']);
     Route::post('/api/sync', [SyncController::class, 'push']);
 

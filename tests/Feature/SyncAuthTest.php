@@ -49,4 +49,15 @@ class SyncAuthTest extends TestCase
     {
         $this->artisan('pos:token', ['user' => 'nobody'])->assertFailed();
     }
+
+    public function test_sync_is_rate_limited(): void
+    {
+        $token = $this->admin->createToken('pos-sync')->plainTextToken;
+
+        for ($i = 0; $i < 120; $i++) {
+            $this->withToken($token)->getJson('/api/sync?table=charges')->assertOk();
+        }
+
+        $this->withToken($token)->getJson('/api/sync?table=charges')->assertStatus(429);
+    }
 }
