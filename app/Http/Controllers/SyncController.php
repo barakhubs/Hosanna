@@ -43,6 +43,8 @@ class SyncController extends Controller
             ], 400);
         }
 
+        $this->validateStoreId($request);
+
         return match($table) {
             'products' => $this->getProducts($request),
             'contacts' => $this->getContacts($request),
@@ -59,6 +61,8 @@ class SyncController extends Controller
     {
         $table = $request->query('table');
 
+        $this->validateStoreId($request);
+
         return match($table) {
             'sales' => $this->syncSales($request),
             'transactions' => $this->syncTransactions($request),
@@ -69,17 +73,26 @@ class SyncController extends Controller
     }
 
     /**
+     * store_id is optional on most calls, but when sent it must be a real store
+     */
+    private function validateStoreId(Request $request): void
+    {
+        $request->validate([
+            'store_id' => 'nullable|integer|exists:stores,id',
+        ]);
+    }
+
+    /**
      * Get products with flat structure
      */
     private function getProducts(Request $request)
     {
-        $storeId = $request->query('store_id', 1);
+        $storeId = (int) $request->query('store_id', 1);
         $lastSync = $this->parseTimestamp($request->query('last_sync'));
 
         $query = Product::query()
             ->select(
                 'products.id',
-                DB::raw("{$storeId} AS store_id"),
                 'products.name',
                 'products.description',
                 'products.sku',
@@ -124,10 +137,10 @@ class SyncController extends Controller
             });
         }
 
-        $products = $query->get()->map(function ($product) {
+        $products = $query->get()->map(function ($product) use ($storeId) {
             return [
                 'id' => $product->id,
-                'store_id' => (string) $product->store_id,
+                'store_id' => (string) $storeId,
                 'name' => $product->name,
                 'description' => $product->description,
                 'sku' => $product->sku,
