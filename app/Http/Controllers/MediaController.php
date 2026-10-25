@@ -103,10 +103,10 @@ class MediaController extends Controller
             DB::rollBack();
 
             // Optionally, log the error
-            Log::error("Migration failed: " . $e->getMessage());
+            $this->logError('Image migration failed', $e);
 
             // Return error response
-            return $e->getMessage();
+            return $this->errorMessage($e);
         }
     }
 

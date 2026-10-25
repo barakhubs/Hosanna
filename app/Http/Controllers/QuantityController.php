@@ -70,9 +70,10 @@ class QuantityController extends Controller
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollBack();
+            $this->logError('Quantity adjustment failed', $e);
 
             // Return error response
-            return response()->json(['error' => $e], 500);
+            return response()->json(['error' => $this->errorMessage($e)], 500);
         }
     }
     public function getAdjustmentsLog($stock_id)
