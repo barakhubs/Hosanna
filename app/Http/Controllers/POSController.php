@@ -16,6 +16,7 @@ use App\Models\Transaction;
 use App\Models\Contact;
 use App\Services\Inventory\StockService;
 use App\Services\Payments\PaymentRecorder;
+use App\Services\Sales\ChargeCalculator;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\ReloadAndBillMeta;
@@ -398,112 +399,7 @@ class POSController extends Controller
                 }
             }
 
-            // Calculate base amount for charges (product subtotal - discount)
-            $chargeBaseAmount = $productLineTotal - $sale->discount;
-
-            // Calculate total charge amount
-            $totalChargeAmount = 0;
-
-            // Check if this is a return transaction for Smart Charge Reversal (Option A)
-            $isReturn = $sale->sale_type === 'return';
-            $returnProportionPercentage = 0;
-
-            if ($isReturn && $sale->reference_id) {
-                // Get the original sale
-                $originalSale = Sale::find($sale->reference_id);
-
-                if ($originalSale) {
-                    // Get original product items (exclude charges)
-                    $originalProducts = SaleItem::where('sale_id', $originalSale->id)
-                        ->where(function ($query) {
-                            $query->where('item_type', '!=', 'charge')
-                                ->orWhereNull('item_type');
-                        })
-                        ->get();
-
-                    // Calculate original quantity
-                    $originalQuantity = 0;
-                    foreach ($originalProducts as $item) {
-                        $originalQuantity += $item->quantity;
-                    }
-
-                    // Calculate return proportion
-                    if ($originalQuantity > 0) {
-                        $returnProportionPercentage = ($returnedQuantity / $originalQuantity) * 100;
-                    }
-
-                    // Get original charges
-                    $originalCharges = SaleItem::where('sale_id', $originalSale->id)
-                        ->where('item_type', 'charge')
-                        ->get();
-
-                    // Create reversed charges based on original charges and return proportion
-                    if ($originalCharges->isNotEmpty()) {
-                        foreach ($originalCharges as $originalCharge) {
-                            // Calculate proportional reversed charge amount
-                            $reversalAmount = ($originalCharge->unit_price * $returnProportionPercentage) / 100;
-
-                            // Store as negative charge (reversal)
-                            $totalChargeAmount -= $reversalAmount;
-
-                            // Create SaleItem for charge reversal with negative amount
-                            SaleItem::create([
-                                'sale_id' => $sale->id,
-                                'item_type' => 'charge',
-                                'charge_id' => $originalCharge->charge_id,
-                                'charge_type' => $originalCharge->charge_type,
-                                'rate_value' => $originalCharge->rate_value,
-                                'rate_type' => $originalCharge->rate_type,
-                                'base_amount' => $chargeBaseAmount,
-                                'quantity' => 1,
-                                'unit_price' => -$reversalAmount,  // Negative amount for reversal
-                                'unit_cost' => 0,
-                                'sale_date' => $sale->sale_date,
-                                'description' => $originalCharge->description . ' (Reversal)',
-                                'notes' => 'Proportional reversal: ' . round($returnProportionPercentage, 2) . '% of original',
-                            ]);
-                        }
-                    }
-                }
-            } else {
-                // Normal sale: apply charges as configured
-                if (!empty($charges)) {
-                    foreach ($charges as $charge) {
-                        $chargeAmount = 0;
-
-                        // Calculate charge amount based on rate type
-                        if ($charge['rate_type'] === 'percentage') {
-                            $chargeAmount = ($chargeBaseAmount * $charge['rate_value']) / 100;
-                        } else {
-                            $chargeAmount = $charge['rate_value'];
-                        }
-
-                        $totalChargeAmount += $chargeAmount;
-
-                        // Create SaleItem for charge
-                        SaleItem::create([
-                            'sale_id' => $sale->id,
-                            'item_type' => 'charge',
-                            'charge_id' => $charge['id'],
-                            'charge_type' => $charge['charge_type'],
-                            'rate_value' => $charge['rate_value'],
-                            'rate_type' => $charge['rate_type'],
-                            'base_amount' => $chargeBaseAmount,
-                            'quantity' => 1,
-                            'unit_price' => $chargeAmount,
-                            'unit_cost' => 0,
-                            'sale_date' => $sale->sale_date,
-                            'description' => $charge['name'],
-                        ]);
-                    }
-                }
-            }
-
-            // Update sale with charge amounts (can be negative for returns)
-            if ($totalChargeAmount != 0) {
-                $sale->total_charge_amount = $totalChargeAmount;
-                $sale->save();
-            }
+            app(ChargeCalculator::class)->apply($sale, $charges, $productLineTotal, $returnedQuantity);
 
             DB::commit();
 
