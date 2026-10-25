@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\App;
-use App\Models\Setting;
+use App\Settings\SettingsRepository;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Support\Facades\Event;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(SettingsRepository::class);
     }
 
     /**
@@ -28,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
+        // Migrations can add or change settings rows without going through the model
+        Event::listen(MigrationsEnded::class, fn () => app(SettingsRepository::class)->flush());
+
         LogViewer::auth(function ($request) {
             /** @var \App\Models\User */
             $user = Auth::user();
@@ -36,12 +41,12 @@ class AppServiceProvider extends ServiceProvider
 
         // It's possible that the database hasn't been migrated yet, so we need to check that the setting exists before trying to retrieve it.
         if (!App::runningInConsole()) {
-            $mailSetting = Setting::where('meta_key', 'mail_settings')->first();
+            $mailSetting = app(SettingsRepository::class)->get('mail_settings');
         } else {
             $mailSetting = null;
         }
         if ($mailSetting) {
-            $mailSettings = json_decode($mailSetting->meta_value);
+            $mailSettings = json_decode($mailSetting);
             Config::set(['mail.driver' => 'smtp']);
             Config::set(['mail.host' => $mailSettings->mail_host]);
             Config::set(['mail.port' => $mailSettings->mail_port]);

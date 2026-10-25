@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\Store;
 use App\Models\Contact;
-use App\Models\Setting;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -106,7 +106,7 @@ class QuotationController extends Controller
 
     public function show($id)
     {
-        $template = Setting::where('meta_key', 'quotation-template')->first();
+        $template = app(SettingsRepository::class)->get('quotation-template');
         $quotation = Quotation::with(['quotationItems' => function ($q) {
             $q->join('products', 'quotation_items.product_id', '=', 'products.id')
                 ->select('quotation_items.*', 'products.name as product_name');
@@ -116,7 +116,7 @@ class QuotationController extends Controller
 
         return Inertia::render('Quotation/QuotationView', [
             'quotation' => $quotation,
-            'template' => $template->meta_value,
+            'template' => $template,
         ]);
     }
 }

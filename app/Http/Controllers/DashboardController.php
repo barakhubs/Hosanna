@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use App\Support\StorageUrl;
 use App\Models\Cheque;
 use Inertia\Inertia;
@@ -14,7 +15,6 @@ use App\Models\Sale;
 use App\Models\Transaction;
 use App\Models\Expense;
 use App\Models\InventoryTransaction;
-use App\Models\Setting;
 use App\Models\Store;
 use App\Models\SalaryRecord;
 use Illuminate\Support\Facades\DB;
@@ -27,8 +27,7 @@ class DashboardController extends Controller
         $version = config('version.version');
         $imageUrl = StorageUrl::prefix('');
 
-        $settings = Setting::whereIn('meta_key', ['shop_logo', 'misc_settings'])->get();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->only(['shop_logo', 'misc_settings']);
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
         $store_id = session('store_id', Auth::user()->store_id);
         $store_name = Store::where('id', $store_id)->value('name');

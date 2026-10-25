@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use App\Support\SqlDialect;
 use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\Setting;
 use App\Models\Contact;
 use App\Models\User;
 use App\Models\ProductStock;
@@ -94,8 +94,7 @@ class SaleController extends Controller
     {
         $imageUrl = StorageUrl::prefix('');
 
-        $settings = Setting::all();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->all();
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
 
         $sale = Sale::select(
@@ -256,8 +255,7 @@ class SaleController extends Controller
 
     public function pendingSalesReceipt(Request $request, $contact_id)
     {
-        $settings = Setting::all();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->all();
         $sales = Sale::select(
             'sales.id',
             'sale_date',              // Sale date
@@ -425,16 +423,16 @@ class SaleController extends Controller
             $sale->delete();
             DB::commit();
 
-            $adminMail = Setting::where('meta_key', 'mail_settings')->first();
-            $telegramSettings = Setting::where('meta_key', 'telegram_settings')->first();
+            $adminMail = app(SettingsRepository::class)->get('mail_settings');
+            $telegramSettings = app(SettingsRepository::class)->get('telegram_settings');
 
             if ($telegramSettings) {
-                $telegramSettings = json_decode($telegramSettings->meta_value, true);
+                $telegramSettings = json_decode($telegramSettings, true);
                 Notification::route('telegram', $telegramSettings['chat_id'])->notify(new SaleDeleted($sale, $telegramSettings['token']));
             }
 
             if ($adminMail) {
-                $adminMail = json_decode($adminMail->meta_value, true);
+                $adminMail = json_decode($adminMail, true);
                 $adminMail = $adminMail['admin_email'];
                 Notification::route('mail', $adminMail)->notify(new SaleDeleted($sale));
             }
@@ -453,16 +451,16 @@ class SaleController extends Controller
             ->leftJoin('users', 'sales.created_by', '=', 'users.id')
             ->where('sales.id', $id)
             ->first();
-        $adminMail = Setting::where('meta_key', 'mail_settings')->first();
-        $telegramSettings = Setting::where('meta_key', 'telegram_settings')->first();
+        $adminMail = app(SettingsRepository::class)->get('mail_settings');
+        $telegramSettings = app(SettingsRepository::class)->get('telegram_settings');
 
         if ($telegramSettings) {
-            $telegramSettings = json_decode($telegramSettings->meta_value, true);
+            $telegramSettings = json_decode($telegramSettings, true);
             Notification::route('telegram', $telegramSettings['chat_id'])->notify(new SaleCreated($sale, $telegramSettings['token']));
         }
 
         if ($adminMail) {
-            $adminMail = json_decode($adminMail->meta_value, true);
+            $adminMail = json_decode($adminMail, true);
             $adminMail = $adminMail['admin_email'];
             Notification::route('mail', $adminMail)->notify(new SaleCreated($sale));
         } else {
@@ -475,8 +473,7 @@ class SaleController extends Controller
     // api: /api/receipt-text-raw/{id}
     public function apiReceipt(Request $request, $id)
     {
-        $settings = Setting::all();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->all();
         $settingArray['shop_logo'] = 'public/' . $settingArray['shop_logo'];
         $isJson = $request->input('isJson');
 

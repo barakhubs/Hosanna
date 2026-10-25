@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Store;
 use App\Models\Cheque;
-use App\Models\Setting;
 
 class ChequeController extends Controller
 {
     public function getCheques($filters)
     {
-        $settings = Setting::where('meta_key', 'misc_settings')->first();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->all();
         $settingArray['misc_settings'] = json_decode($settingArray['misc_settings'], true);
         $cheque_alert = isset($settingArray['cheque_alert']) ? (int)$settingArray['cheque_alert'] : 3;
 

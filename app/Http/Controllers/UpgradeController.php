@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -352,6 +353,7 @@ class UpgradeController extends Controller
                 
                 // Execute SQL commands
                 DB::unprepared($sql);  // Executes raw SQL directly
+                app(SettingsRepository::class)->flush();
                 
                 // Optionally, log success or handle errors
                 Log::info('SQL file executed successfully.');

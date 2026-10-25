@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use App\Support\SqlDialect;
 use App\Support\StorageUrl;
 use App\Models\CashLog;
@@ -16,7 +17,6 @@ use App\Models\ProductStock;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\ReloadAndBillMeta;
-use App\Models\Setting;
 use App\Notifications\SaleCreated;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
@@ -144,8 +144,7 @@ class POSController extends Controller
         }
         $categories = Collection::where('collection_type', 'category')->get();
         $products = $this->getProducts();
-        $miscSettings = Setting::where('meta_key', 'misc_settings')->first();
-        $miscSettings = json_decode($miscSettings->meta_value, true);
+        $miscSettings = app(SettingsRepository::class)->misc();
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
 
         // Get default charges
@@ -186,8 +185,7 @@ class POSController extends Controller
 
         $categories = Collection::where('collection_type', 'category')->get();
         $products = $this->getProducts();
-        $miscSettings = Setting::where('meta_key', 'misc_settings')->first();
-        $miscSettings = json_decode($miscSettings->meta_value, true);
+        $miscSettings = app(SettingsRepository::class)->misc();
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
 
         // Get charges from the sale's sale_items
@@ -231,8 +229,7 @@ class POSController extends Controller
         $contacts = Contact::select('id', 'name', 'balance')->where('id', $sale->contact_id)->get();
         $currentStore = Store::find($sale->store_id);
 
-        $miscSettings = Setting::where('meta_key', 'misc_settings')->first();
-        $miscSettings = json_decode($miscSettings->meta_value, true);
+        $miscSettings = app(SettingsRepository::class)->misc();
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
 
         if (!$currentStore) {
