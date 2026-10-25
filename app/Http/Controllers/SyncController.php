@@ -43,6 +43,8 @@ class SyncController extends Controller
             ], 400);
         }
 
+        $this->validateStoreId($request);
+
         return match($table) {
             'products' => $this->getProducts($request),
             'contacts' => $this->getContacts($request),
@@ -59,6 +61,8 @@ class SyncController extends Controller
     {
         $table = $request->query('table');
 
+        $this->validateStoreId($request);
+
         return match($table) {
             'sales' => $this->syncSales($request),
             'transactions' => $this->syncTransactions($request),
@@ -66,6 +70,16 @@ class SyncController extends Controller
             'stock' => $this->syncStock($request),
             default => response()->json(['status' => 'error', 'message' => 'Invalid table'], 400),
         };
+    }
+
+    /**
+     * store_id is optional on most calls, but when sent it must be a real store
+     */
+    private function validateStoreId(Request $request): void
+    {
+        $request->validate([
+            'store_id' => 'nullable|integer|exists:stores,id',
+        ]);
     }
 
     /**
