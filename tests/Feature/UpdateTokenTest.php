@@ -45,4 +45,15 @@ class UpdateTokenTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors('zip_file');
     }
+
+    public function test_update_endpoint_is_rate_limited(): void
+    {
+        config(['version.update_token' => 'secret']);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/application-update', ['update_token' => 'nope'])->assertStatus(401);
+        }
+
+        $this->postJson('/api/application-update', ['update_token' => 'nope'])->assertStatus(429);
+    }
 }
