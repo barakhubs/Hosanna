@@ -13,7 +13,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Transaction;
 use App\Models\Contact;
-use App\Models\ProductStock;
+use App\Services\Inventory\StockService;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\ReloadAndBillMeta;
@@ -30,6 +30,10 @@ use App\Models\Charge;
 
 class POSController extends Controller
 {
+    public function __construct(private StockService $stock)
+    {
+    }
+
     public function getProducts($filters = [])
     {
         $imageUrl = StorageUrl::prefix('/storage/');
@@ -337,14 +341,8 @@ class POSController extends Controller
                 $product = Product::find($item->product_id);
 
                 if ($product->is_stock_managed) {
-                    $stock = ProductStock::where('store_id', $sale->store_id)
-                        ->where('batch_id', $item->batch_id)
-                        ->first();
-                    if ($stock) {
-                        $restoreQty = $item->quantity + ($item->free_quantity ?? 0);
-                        $stock->quantity += $restoreQty;
-                        $stock->save();
-                    }
+                    $restoreQty = $item->quantity + ($item->free_quantity ?? 0);
+                    $this->stock->restore($sale->store_id, $item->batch_id, $restoreQty);
                 }
             }
 
@@ -465,23 +463,10 @@ class POSController extends Controller
                 ]);
 
                 if ($item['is_stock_managed'] == 1) {
-                    $productStock = ProductStock::where('store_id', $sale->store_id)
-                        ->where('batch_id', $item['batch_id'])
-                        ->first();
+                    // Total deduction = sold qty + free qty
+                    $deduction = $item['quantity'] + ($item['free_quantity'] ?? 0);
 
-                    // Check if stock exists
-                    if ($productStock) {
-                        // Total deduction = sold qty + free qty
-                        $deduction = $item['quantity'] + ($item['free_quantity'] ?? 0);
-                        $productStock->quantity -= $deduction;
-
-                        // Ensure that stock doesn't go negative
-                        if ($productStock->quantity < 0) {
-                            $productStock->quantity = 0;
-                        }
-
-                        $productStock->save();
-                    } else {
+                    if (!$this->stock->deduct($sale->store_id, $item['batch_id'], $deduction)) {
                         DB::rollBack();
                         return response()->json(['error' => 'Stock for product not found in the specified store or batch'], 500);
                     }

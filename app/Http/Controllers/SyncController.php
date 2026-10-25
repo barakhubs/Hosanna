@@ -623,7 +623,7 @@ class SyncController extends Controller
         $checkoutRequest->replace($requestData);
 
         // Call POSController checkout method
-        $posController = new POSController();
+        $posController = app(POSController::class);
         $response = $posController->checkout($checkoutRequest);
 
         // Check if response is successful
