@@ -7,11 +7,20 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
+use Tests\Concerns\SeedsPos;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsPos;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedPos();
+    }
 
     public function test_email_verification_screen_can_be_rendered(): void
     {
