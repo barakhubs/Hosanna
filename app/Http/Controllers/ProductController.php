@@ -382,7 +382,7 @@ class ProductController extends Controller
             DB::rollBack();
 
             // Return an error response
-            return redirect()->back()->withErrors(['error' => 'Failed to update product: ' . $e->getMessage()]);
+            return redirect()->back()->withErrors(['error' => 'Failed to update product: ' . $this->errorMessage($e)]);
         }
     }
 
@@ -677,7 +677,7 @@ class ProductController extends Controller
 
             return redirect()->back()->with('success', 'Product deleted successfully');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Failed to delete product: ' . $e->getMessage()]);
+            return redirect()->back()->withErrors(['error' => 'Failed to delete product: ' . $this->errorMessage($e)]);
         }
     }
 }

@@ -106,7 +106,7 @@ class MediaController extends Controller
             Log::error("Migration failed: " . $e->getMessage());
 
             // Return error response
-            return $e->getMessage();
+            return $this->errorMessage($e);
         }
     }
 

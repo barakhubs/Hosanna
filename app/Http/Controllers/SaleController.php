@@ -444,7 +444,7 @@ class SaleController extends Controller
             return response()->json(['success' => 'Sale deleted successfully'], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => $this->errorMessage($e)], 500);
         }
     }
 

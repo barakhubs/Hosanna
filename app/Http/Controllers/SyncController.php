@@ -399,7 +399,7 @@ class SyncController extends Controller
             } catch (\Exception $e) {
                 $errors[] = [
                     'invoice_number' => $saleData['invoice_number'] ?? 'unknown',
-                    'error' => $e->getMessage()
+                    'error' => $this->errorMessage($e)
                 ];
             }
         }
@@ -450,7 +450,7 @@ class SyncController extends Controller
             return response()->json(['status' => 'success', 'synced' => $synced]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json(['status' => 'error', 'message' => $this->errorMessage($e)], 500);
         }
     }
 
@@ -487,7 +487,7 @@ class SyncController extends Controller
             return response()->json(['status' => 'success', 'synced' => $synced]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json(['status' => 'error', 'message' => $this->errorMessage($e)], 500);
         }
     }
 
@@ -523,7 +523,7 @@ class SyncController extends Controller
             return response()->json(['status' => 'success', 'updated' => $updated]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json(['status' => 'error', 'message' => $this->errorMessage($e)], 500);
         }
     }
 

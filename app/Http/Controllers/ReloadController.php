@@ -92,7 +92,7 @@ class ReloadController extends Controller
         } catch (\Exception $e) {
             // Handle any errors and send failure response
             return response()->json([
-                'message' => $e->getMessage() // You can also customize this to return more user-friendly messages
+                'message' => $this->errorMessage($e)
             ], 500);
         }
     }

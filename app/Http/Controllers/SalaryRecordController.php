@@ -128,7 +128,7 @@ class SalaryRecordController extends Controller
             ]);
 
             // Return error response
-            return response()->json(['error' => $e], 500);
+            return response()->json(['error' => $this->errorMessage($e)], 500);
         }
     }
 
@@ -180,7 +180,7 @@ class SalaryRecordController extends Controller
             ]);
 
             // Return error response
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => $this->errorMessage($e)], 500);
         }
     }
 }
