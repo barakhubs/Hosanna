@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlDialect;
 use App\Support\StorageUrl;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class ProductController extends Controller
             'product_stocks.id as stock_id',
             'product_batches.is_featured',
             'product_batches.id AS batch_id',
-            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
+            DB::raw(SqlDialect::concat("'{$imageUrl}'", 'products.image_url') . " AS image_url"),
             'products.name',
             'products.barcode',
             DB::raw("COALESCE(products.sku, 'N/A') AS sku"),
@@ -395,7 +396,7 @@ class ProductController extends Controller
 
         $products = Product::select(
             'products.id',
-            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
+            DB::raw(SqlDialect::concat("'{$imageUrl}'", 'products.image_url') . " AS image_url"),
             'products.name',
             'products.barcode',
             // DB::raw("COALESCE(products.sku, 'N/A') AS sku"), //if we comment it, it will not generate on front end

@@ -42,13 +42,15 @@ class RouteAccessTest extends TestCase
         $this->getJson('/api/sync?table=nope')->assertStatus(400);
     }
 
-    public function test_sync_products_query_fails_on_sqlite(): void
+    public function test_sync_products_works_on_sqlite(): void
     {
-        // GREATEST() is MySQL only
         Sanctum::actingAs($this->admin);
-        $this->stockFor();
+        $stock = $this->stockFor([], 7);
 
-        $this->getJson('/api/sync?table=products')->assertStatus(500);
+        $this->getJson('/api/sync?table=products&store_id=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $stock->product_id)
+            ->assertJsonPath('data.0.store_id', '1');
     }
 
     public function test_store_config_route_points_to_missing_method(): void
