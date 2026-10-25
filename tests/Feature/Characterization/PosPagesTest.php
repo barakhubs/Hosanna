@@ -71,4 +71,17 @@ class PosPagesTest extends TestCase
                 ->has('userPermissions', 19)
             );
     }
+
+    public function test_pos_filter_by_category(): void
+    {
+        $this->stockFor([], 3, ['category_id' => 7, 'name' => 'Soap']);
+        $this->stockFor([], 3, ['category_id' => 8, 'name' => 'Rice']);
+
+        $this->postJson('/pos/filter', ['category_id' => 7])
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.name', 'Soap');
+
+        $this->postJson('/pos/filter', ['category_id' => 0, 'all_products' => 'true'])->assertJsonCount(2);
+    }
 }

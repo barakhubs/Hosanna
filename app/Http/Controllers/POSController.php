@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Settings\SettingsRepository;
+use App\Queries\PosProductQuery;
 use App\Support\SqlDialect;
 use App\Support\StorageUrl;
 use App\Models\CashLog;
@@ -37,31 +38,6 @@ class POSController extends Controller
 
     public function getProducts($filters = [])
     {
-        $imageUrl = StorageUrl::prefix('/storage/');
-        $allProducts = $filters['all_products'] ?? false;
-
-        $query = Product::query();
-        $query->select(
-            'products.id',
-            DB::raw(SqlDialect::concat("'{$imageUrl}'", 'products.image_url') . " AS image_url"),
-            'products.name',
-            'products.is_stock_managed',
-            DB::raw("COALESCE(pb.batch_number, 'N/A') AS batch_number"),
-            DB::raw("COALESCE(product_stocks.quantity, 0) AS quantity"),
-            DB::raw("COALESCE(product_stocks.quantity, 0) AS stock_quantity"),
-            'pb.cost',
-            'pb.price',
-            'pb.id AS batch_id',
-            'products.meta_data',
-            'products.product_type',
-            'products.alert_quantity',
-            'pb.discount',
-            'pb.discount_percentage'
-        )
-            ->leftJoin('product_batches AS pb', 'products.id', '=', 'pb.product_id') // Join with product_batches using product_id
-            ->leftJoin('product_stocks', 'pb.id', '=', 'product_stocks.batch_id') // Join with product_stocks using batch_id
-            ->where('pb.is_active', 1);
-
         // Get current store ID with fallback
         $currentStoreId = session('store_id');
         if (!$currentStoreId && Auth::check()) {
@@ -71,51 +47,7 @@ class POSController extends Controller
             $currentStoreId = 1; // Fallback to store ID 1
         }
 
-        // Filter by store only if we have stocks for this store
-        $query->where('product_stocks.store_id', $currentStoreId);
-
-        // Apply category filter if set
-        if (isset($filters['category_id'])) {
-            $query->where('products.category_id', $filters['category_id']);
-        } else if (!isset($filters['all_products'])) {
-            // Changed: Don't filter by is_featured by default, this was causing products to not show
-            // $query->where('pb.is_featured', 1);
-            // Instead, let's show all active products
-        }
-
-        $productsQuery = $query->groupBy(
-            'products.id',
-            'products.image_url',
-            'products.name',
-            'products.discount',
-            'products.is_stock_managed',
-            DB::raw("COALESCE(pb.batch_number, 'N/A')"),
-            'pb.cost',
-            'pb.price',
-            'pb.id',
-            'product_stocks.quantity',
-            'products.product_type',
-            'products.meta_data',
-            'products.alert_quantity',
-            'pb.discount',
-            'pb.discount_percentage'
-        );
-
-        if (!isset($allProducts)) {
-            $productsQuery->limit(20);
-        }
-
-        $products = $productsQuery->get();
-
-        // Debug logging
-        Log::info('POS getProducts debug', [
-            'current_store_id' => $currentStoreId,
-            'products_count' => $products->count(),
-            'sql_query' => $productsQuery->toSql(),
-            'bindings' => $productsQuery->getBindings(),
-        ]);
-
-        return $products;
+        return app(PosProductQuery::class)->get($currentStoreId, $filters);
     }
 
     public function getProductsByFilter(Request $request)
