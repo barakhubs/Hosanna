@@ -4,11 +4,20 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsPos;
 use Tests\TestCase;
 
 class PasswordConfirmationTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsPos;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedPos();
+    }
 
     public function test_confirm_password_screen_can_be_rendered(): void
     {

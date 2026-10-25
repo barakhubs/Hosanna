@@ -5,11 +5,20 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeedsPos;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsPos;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedPos();
+    }
 
     public function test_password_can_be_updated(): void
     {
