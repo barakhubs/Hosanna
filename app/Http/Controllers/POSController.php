@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\StorageUrl;
 use App\Models\CashLog;
 use App\Models\Collection;
 use Illuminate\Http\Request;
@@ -30,8 +31,7 @@ class POSController extends Controller
 {
     public function getProducts($filters = [])
     {
-        $imageUrl = '/storage/';
-        if (app()->environment('production')) $imageUrl = 'public/storage/';
+        $imageUrl = StorageUrl::prefix('/storage/');
         $allProducts = $filters['all_products'] ?? false;
 
         $query = Product::query();
@@ -224,8 +224,7 @@ class POSController extends Controller
 
     public function returnIndex(Request $request, $sale_id)
     {
-        $imageUrl = '/storage/';
-        if (app()->environment('production')) $imageUrl = 'public/storage/';
+        $imageUrl = StorageUrl::prefix('/storage/');
 
         $sale = Sale::find($sale_id);
         $contacts = Contact::select('id', 'name', 'balance')->where('id', $sale->contact_id)->get();

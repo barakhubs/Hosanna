@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\StorageUrl;
 use App\Models\Cheque;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
@@ -24,8 +25,7 @@ class DashboardController extends Controller
     public function index()
     {
         $version = config('version.version');
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
 
         $settings = Setting::whereIn('meta_key', ['shop_logo', 'misc_settings'])->get();
         $settingArray = $settings->pluck('meta_value', 'meta_key')->all();

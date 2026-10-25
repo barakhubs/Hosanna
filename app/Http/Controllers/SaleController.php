@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Sale;
@@ -90,8 +91,7 @@ class SaleController extends Controller
 
     public function receipt($id)
     {
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
 
         $settings = Setting::all();
         $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
