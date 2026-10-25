@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlDialect;
 use App\Models\Product;
 use App\Models\ProductBatch;
 use App\Models\ProductStock;
@@ -115,11 +116,11 @@ class SyncController extends Controller
                 'pb.discount',
                 'pb.discount_percentage',
                 DB::raw("COALESCE(product_stocks.quantity, 0) AS stock_quantity"),
-                DB::raw("GREATEST(
-                    products.updated_at,
-                    pb.updated_at,
-                    COALESCE(product_stocks.updated_at, '1970-01-01')
-                ) AS last_modified")
+                DB::raw(SqlDialect::greatest(
+                    'products.updated_at',
+                    'pb.updated_at',
+                    "COALESCE(product_stocks.updated_at, '1970-01-01')"
+                ) . " AS last_modified")
             )
             ->leftJoin('product_batches AS pb', 'products.id', '=', 'pb.product_id')
             ->leftJoin('product_stocks', function($join) use ($storeId) {

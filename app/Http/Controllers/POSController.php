@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlDialect;
+use App\Support\StorageUrl;
 use App\Models\CashLog;
 use App\Models\Collection;
 use Illuminate\Http\Request;
@@ -30,14 +32,13 @@ class POSController extends Controller
 {
     public function getProducts($filters = [])
     {
-        $imageUrl = '/storage/';
-        if (app()->environment('production')) $imageUrl = 'public/storage/';
+        $imageUrl = StorageUrl::prefix('/storage/');
         $allProducts = $filters['all_products'] ?? false;
 
         $query = Product::query();
         $query->select(
             'products.id',
-            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
+            DB::raw(SqlDialect::concat("'{$imageUrl}'", 'products.image_url') . " AS image_url"),
             'products.name',
             'products.is_stock_managed',
             DB::raw("COALESCE(pb.batch_number, 'N/A') AS batch_number"),
@@ -224,8 +225,7 @@ class POSController extends Controller
 
     public function returnIndex(Request $request, $sale_id)
     {
-        $imageUrl = '/storage/';
-        if (app()->environment('production')) $imageUrl = 'public/storage/';
+        $imageUrl = StorageUrl::prefix('/storage/');
 
         $sale = Sale::find($sale_id);
         $contacts = Contact::select('id', 'name', 'balance')->where('id', $sale->contact_id)->get();
@@ -241,7 +241,7 @@ class POSController extends Controller
 
         $products = Product::select(
             'products.id',
-            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
+            DB::raw(SqlDialect::concat("'{$imageUrl}'", 'products.image_url') . " AS image_url"),
             'products.name',
             'si.discount',
             'products.is_stock_managed',

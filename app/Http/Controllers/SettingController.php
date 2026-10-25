@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Setting;
@@ -11,8 +12,7 @@ class SettingController extends Controller
 {
     public function index()
     {
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
 
         $settings = Setting::all();
         $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
@@ -27,8 +27,7 @@ class SettingController extends Controller
 
     public function quoteTemplate()
     {
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
         $id = 2;
 
         $settings = Setting::all();
@@ -88,8 +87,7 @@ class SettingController extends Controller
 
     public function receiptTemplate()
     {
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
         $id = 2;
 
         $settings = Setting::all();
@@ -149,8 +147,7 @@ class SettingController extends Controller
 
     public function barcodeTemplate()
     {
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
 
         $settings = Setting::whereIn('meta_key', [
             'show_barcode_store',

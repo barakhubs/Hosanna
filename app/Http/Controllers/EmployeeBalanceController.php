@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlDialect;
 use Illuminate\Http\Request;
 use App\Models\EmployeeBalanceLog;
 use App\Models\Employee;
@@ -26,7 +27,7 @@ class EmployeeBalanceController extends Controller
         // Fetch EmployeeBalanceLog records
         $balanceLogs = EmployeeBalanceLog::select(
             'employee_balance_logs.amount',
-            DB::raw("'Balance Update: ' || employee_balance_logs.description as description"),
+            DB::raw(SqlDialect::concat("'Balance Update: '", 'employee_balance_logs.description') . " as description"),
             'employee_balance_logs.log_date'
         )
             ->orderBy('employee_balance_logs.log_date', 'desc');

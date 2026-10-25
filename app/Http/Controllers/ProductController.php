@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlDialect;
+use App\Support\StorageUrl;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,8 +25,7 @@ class ProductController extends Controller
 {
     public function getProducts($filters)
     {
-        $imageUrl = 'storage/';
-        if (app()->environment('production')) $imageUrl = 'public/storage/';
+        $imageUrl = StorageUrl::prefix('storage/');
 
         $query = ProductBatch::query();
         $query->select(
@@ -32,7 +33,7 @@ class ProductController extends Controller
             'product_stocks.id as stock_id',
             'product_batches.is_featured',
             'product_batches.id AS batch_id',
-            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
+            DB::raw(SqlDialect::concat("'{$imageUrl}'", 'products.image_url') . " AS image_url"),
             'products.name',
             'products.barcode',
             DB::raw("COALESCE(products.sku, 'N/A') AS sku"),
@@ -140,8 +141,7 @@ class ProductController extends Controller
 
     public function find($id)
     {
-        $imageUrl = 'storage/';
-        if (app()->environment('production')) $imageUrl = 'public/storage/';
+        $imageUrl = StorageUrl::prefix('storage/');
 
         $miscSettings = Setting::getMiscSettings();
         $collection = Collection::select('id', 'name', 'collection_type')->get();
@@ -389,15 +389,14 @@ class ProductController extends Controller
 
     public function searchProduct(Request $request)
     {
-        $imageUrl = 'storage/';
-        if (app()->environment('production')) $imageUrl = 'public/storage/';
+        $imageUrl = StorageUrl::prefix('storage/');
 
         $search_query = $request->input('search_query');
         $is_purchase = $request->input('is_purchase', 0);
 
         $products = Product::select(
             'products.id',
-            DB::raw("'{$imageUrl}' || products.image_url AS image_url"),
+            DB::raw(SqlDialect::concat("'{$imageUrl}'", 'products.image_url') . " AS image_url"),
             'products.name',
             'products.barcode',
             // DB::raw("COALESCE(products.sku, 'N/A') AS sku"), //if we comment it, it will not generate on front end
@@ -578,8 +577,7 @@ class ProductController extends Controller
 
     public function getBarcode($batch_id)
     {
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
 
         $product = ProductBatch::select('products.name', 'products.barcode', 'product_batches.price', 'product_batches.discount', 'product_batches.discount_percentage')
             ->join('products', 'product_batches.product_id', '=', 'products.id')

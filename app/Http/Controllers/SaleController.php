@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlDialect;
+use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Sale;
@@ -90,8 +92,7 @@ class SaleController extends Controller
 
     public function receipt($id)
     {
-        $imageUrl = '';
-        if (app()->environment('production')) $imageUrl = 'public/';
+        $imageUrl = StorageUrl::prefix('');
 
         $settings = Setting::all();
         $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
@@ -316,10 +317,7 @@ class SaleController extends Controller
         }
 
         // Fetch all sale items related to the fetched sales
-        // Build database-agnostic date format SQL
-        $dateFormat = DB::getDriverName() === 'mysql'
-            ? "CONCAT(' [', DATE_FORMAT(sale_items.sale_date, '%Y-%m-%d'), '] - ', products.name)"
-            : "' [' || strftime('%Y-%m-%d', sale_items.sale_date) || '] - ' || products.name";
+        $dateFormat = SqlDialect::concat("' ['", SqlDialect::date('sale_items.sale_date'), "'] - '", 'products.name');
 
         $salesItems = SaleItem::select(
             'sale_items.quantity',
