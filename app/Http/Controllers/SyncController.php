@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Sales\CheckoutException;
+use App\Services\Sales\CheckoutService;
+use Illuminate\Support\Facades\Auth;
 use App\Support\SqlDialect;
 use App\Models\Product;
 use App\Models\ProductBatch;
@@ -546,8 +549,6 @@ class SyncController extends Controller
         }
 
         // Transform offline sale data to match checkout request format
-        $checkoutRequest = new Request();
-
         // Parse items
         $items = isset($saleData['items'])
             ? (is_string($saleData['items']) ? json_decode($saleData['items'], true) : $saleData['items'])
@@ -619,24 +620,16 @@ class SyncController extends Controller
             'payments' => $payments, // Mapped from transactions
         ];
 
-        // Create request with data
-        $checkoutRequest->replace($requestData);
-
-        // Call POSController checkout method
-        $posController = app(POSController::class);
-        $response = $posController->checkout($checkoutRequest);
-
-        // Check if response is successful
-        $responseData = $response->getData();
-
-        if (isset($responseData->error)) {
-            $errorMessage = is_string($responseData->error)
-                ? $responseData->error
-                : json_encode($responseData->error);
-            throw new \Exception($errorMessage);
+        // Store and user come from the signed in user, same as a sale from the till
+        try {
+            return app(CheckoutService::class)->checkout(
+                $requestData,
+                session('store_id', Auth::user()->store_id),
+                Auth::id()
+            );
+        } catch (CheckoutException $e) {
+            throw new \Exception($e->getMessage());
         }
-
-        return Sale::find($responseData->sale_id);
     }
 
     /**
