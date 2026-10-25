@@ -4,7 +4,6 @@ namespace App\Services\Sales;
 
 use App\Models\CashLog;
 use App\Models\Contact;
-use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Transaction;
@@ -27,8 +26,10 @@ class SaleReversalService
      */
     public function resetForEdit(Sale $sale): void
     {
+        $sale->loadMissing('saleItems.product');
+
         foreach ($sale->saleItems as $item) {
-            $product = Product::find($item->product_id);
+            $product = $item->product;
 
             if ($product->is_stock_managed) {
                 $restoreQty = $item->quantity + ($item->free_quantity ?? 0);
@@ -56,8 +57,10 @@ class SaleReversalService
      */
     public function delete(Sale $sale, $userId): void
     {
+        $sale->loadMissing('saleItems.product');
+
         foreach ($sale->saleItems as $item) {
-            $product = Product::find($item->product_id);
+            $product = $item->product;
 
             if ($product->is_stock_managed) {
                 $this->stock->restore($sale->store_id, $item->batch_id, $item->quantity);
