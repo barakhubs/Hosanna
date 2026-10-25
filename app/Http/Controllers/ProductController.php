@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use App\Support\SqlDialect;
 use App\Support\StorageUrl;
 use Carbon\Carbon;
@@ -116,7 +117,7 @@ class ProductController extends Controller
     public function create()
     {
         $miscSettings = Setting::getMiscSettings();
-        $incrementValue = Setting::where('meta_key', 'product_code_increment')->value('meta_value');
+        $incrementValue = app(SettingsRepository::class)->get('product_code_increment');
         $incrementValue = $incrementValue ? $incrementValue : 1000;
 
         $lastProduct = Product::latest('id')->first();
@@ -584,14 +585,13 @@ class ProductController extends Controller
             ->where('product_batches.id', $batch_id)
             ->first();
 
-        $settings = Setting::whereIn('meta_key', [
+        $settingArray = app(SettingsRepository::class)->only([
             'show_barcode_store',
             'show_barcode_product_price',
             'show_barcode_product_name',
             'barcode_settings',
             'shop_logo',
-        ])->get();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        ]);
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
 
         $templateName = 'barcode-template.html';
@@ -612,8 +612,7 @@ class ProductController extends Controller
 
         // Fallback to database template if file doesn't exist
         if (empty($content)) {
-            $template = Setting::where('meta_key', 'barcode-template')->first();
-            $content = $template ? $template->meta_value : '';
+            $content = app(SettingsRepository::class)->get('barcode-template', '');
         }
 
         // Render the 'Products' component with data

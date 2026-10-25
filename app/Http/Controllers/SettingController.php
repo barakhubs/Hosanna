@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,8 +15,7 @@ class SettingController extends Controller
     {
         $imageUrl = StorageUrl::prefix('');
 
-        $settings = Setting::all();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->all();
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
         $settingArray['tinymce'] = asset('tinymce/tinymce.min.js');
         // Render the 'Settings' component with data
@@ -30,8 +30,7 @@ class SettingController extends Controller
         $imageUrl = StorageUrl::prefix('');
         $id = 2;
 
-        $settings = Setting::all();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->all();
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
         $sale = \App\Models\Sale::select(
             'sales.id',
@@ -90,8 +89,7 @@ class SettingController extends Controller
         $imageUrl = StorageUrl::prefix('');
         $id = 2;
 
-        $settings = Setting::all();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        $settingArray = app(SettingsRepository::class)->all();
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
         $sale = \App\Models\Sale::select(
             'sales.id',
@@ -149,14 +147,13 @@ class SettingController extends Controller
     {
         $imageUrl = StorageUrl::prefix('');
 
-        $settings = Setting::whereIn('meta_key', [
+        $settingArray = app(SettingsRepository::class)->only([
             'show_barcode_store',
             'show_barcode_product_price',
             'show_barcode_product_name',
             'barcode_settings',
             'shop_logo',
-        ])->get();
-        $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
+        ]);
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
 
         $templateName = 'barcode-template.html'; // or get this from the request
@@ -374,8 +371,7 @@ class SettingController extends Controller
     public function updateModule($action, Request $request)
     {
         $module = $request->input('module');
-        $setting = Setting::where('meta_key', 'modules')->first();
-        $modules = $setting ? explode(',', $setting->meta_value) : [];
+        $modules = app(SettingsRepository::class)->modules();
 
         if ($action == 'activate') {
             if (!in_array($module, $modules)) {
@@ -400,8 +396,7 @@ class SettingController extends Controller
     public function getTemplate(Request $request)
     {
         $templateName = $request->template_name;
-        $setting = Setting::where('meta_key', $templateName)->first();
-        $template = $setting && $setting->meta_value ? $setting->meta_value : '';
+        $template = app(SettingsRepository::class)->get($templateName) ?: '';
 
         return response()->json(['template' => $template], 200);
     }
@@ -419,11 +414,11 @@ class SettingController extends Controller
 
     public function getBarcodeTemplate()
     {
-        $template = Setting::where('meta_key', 'barcode_template')->first();
-        $settings = Setting::where('meta_key', 'barcode_settings')->first();
+        $template = app(SettingsRepository::class)->get('barcode_template');
+        $settings = app(SettingsRepository::class)->get('barcode_settings');
 
-        $templateContent = $template && $template->meta_value ? $template->meta_value : '';
-        $barcodeSettings = $settings && $settings->meta_value ? json_decode($settings->meta_value, true) : [
+        $templateContent = $template ?: '';
+        $barcodeSettings = $settings ? json_decode($settings, true) : [
             'format' => 'CODE128',
             'width' => 2,
             'height' => 35,

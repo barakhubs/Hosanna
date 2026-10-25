@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use App\Models\Product;
 use App\Models\Attachment;
-use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -52,7 +52,7 @@ class MediaController extends Controller
             return $attachment;
         });
 
-        $settings = Setting::where('meta_key', 'misc_settings')->pluck('meta_value', 'meta_key')->first();
+        $settings = app(SettingsRepository::class)->get('misc_settings');
         // Pass the data to the view
         return Inertia::render('Media/Media', [
             'images' => $attachments, // Structure: ['directoryName' => ['file1', 'file2', ...]]
