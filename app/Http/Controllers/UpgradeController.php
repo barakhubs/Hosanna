@@ -386,8 +386,7 @@ class UpgradeController extends Controller
 
     public function applicationUpdate(Request $request)
     {
-        $updateToken = env('UPDATE_TOKEN');
-        if ($updateToken !== request('update_token')) {
+        if (!$this->hasValidUpdateToken($request)) {
             return response()->json(['error' => 'Invalid update token'], 401);
         }
 
@@ -778,11 +777,19 @@ class UpgradeController extends Controller
      */
     public function applicationUpdateV2(Request $request)
     {
-        $updateToken = env('UPDATE_TOKEN');
-        if ($updateToken !== request('update_token')) {
+        if (!$this->hasValidUpdateToken($request)) {
             return response()->json(['error' => 'Invalid update token'], 401);
         }
 
         return $this->handleUploadV2($request);
+    }
+
+    private function hasValidUpdateToken(Request $request): bool
+    {
+        $updateToken = config('version.update_token');
+        $given = $request->input('update_token');
+
+        return is_string($updateToken) && $updateToken !== ''
+            && is_string($given) && hash_equals($updateToken, $given);
     }
 }

@@ -45,15 +45,6 @@ class RouteAccessTest extends TestCase
         $this->getJson('/api/stores/1')->assertStatus(500);
     }
 
-    public function test_update_endpoint_skips_token_check_when_token_is_unset(): void
-    {
-        config(['app.debug' => false]);
-        putenv('UPDATE_TOKEN');
-
-        // Gets as far as upload validation, so the token check passed
-        $this->postJson('/api/application-update')->assertStatus(422)->assertJsonValidationErrors('zip_file');
-    }
-
     public function test_cashier_can_reach_admin_pages(): void
     {
         $cashier = $this->makeUser('user');
