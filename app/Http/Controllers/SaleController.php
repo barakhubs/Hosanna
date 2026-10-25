@@ -11,9 +11,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Contact;
 use App\Models\User;
-use App\Models\ProductStock;
-use App\Models\CashLog;
-use App\Models\Product;
+use App\Services\Sales\SaleReversalService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -390,37 +388,7 @@ class SaleController extends Controller
         DB::beginTransaction();
         try {
             $sale = Sale::findOrFail($id);
-
-            // Delete associated sale items
-            foreach ($sale->saleItems as $item) {
-
-                $product = Product::find($item->product_id);
-                // If the item affects stock, adjust the stock back
-                if ($product->is_stock_managed) {
-                    $productStock = ProductStock::where('store_id', $sale->store_id)
-                        ->where('batch_id', $item->batch_id)
-                        ->first();
-                    if ($productStock) {
-                        $productStock->quantity += $item->quantity;
-                        $productStock->save();
-                    }
-                }
-                $item->delete(); // Delete the sale item
-            }
-
-            // Delete associated transactions
-            foreach ($sale->transactions as $transaction) {
-                if ($transaction->payment_method == 'Cash') {
-                    CashLog::where('reference_id', $transaction->id)->where('source', 'sales')->delete();
-                } else if ($transaction->payment_method == 'Credit') {
-                    Contact::where('id', $sale->contact_id)->increment('balance', $transaction['amount']);
-                }
-                $transaction->delete();
-            }
-            $sale->deleted_by = Auth::id();
-            $sale->save();
-            // Delete the sale
-            $sale->delete();
+            app(SaleReversalService::class)->delete($sale, Auth::id());
             DB::commit();
 
             $adminMail = app(SettingsRepository::class)->get('mail_settings');
