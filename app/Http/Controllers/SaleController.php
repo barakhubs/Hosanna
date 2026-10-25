@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Sales\SaleNotifier;
 use App\Services\Sales\ReceiptTextRenderer;
 use App\Queries\SaleReceiptQuery;
 use App\Settings\SettingsRepository;
@@ -16,10 +17,6 @@ use App\Models\User;
 use App\Services\Sales\SaleReversalService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
-use App\Notifications\SaleCreated;
-use App\Notifications\SaleDeleted;
 use Carbon\Carbon;
 
 class SaleController extends Controller
@@ -358,19 +355,15 @@ class SaleController extends Controller
             app(SaleReversalService::class)->delete($sale, Auth::id());
             DB::commit();
 
-            $adminMail = app(SettingsRepository::class)->get('mail_settings');
-            $telegramSettings = app(SettingsRepository::class)->get('telegram_settings');
-
-            if ($telegramSettings) {
-                $telegramSettings = json_decode($telegramSettings, true);
-                Notification::route('telegram', $telegramSettings['chat_id'])->notify(new SaleDeleted($sale, $telegramSettings['token']));
-            }
-
-            if ($adminMail) {
-                $adminMail = json_decode($adminMail, true);
-                $adminMail = $adminMail['admin_email'];
-                Notification::route('mail', $adminMail)->notify(new SaleDeleted($sale));
-            }
+            // send after the response so a slow or broken mail server does not hold up
+            // (or fail) a delete that has already been saved
+            app()->terminating(function () use ($sale) {
+                try {
+                    app(SaleNotifier::class)->deleted($sale);
+                } catch (\Throwable $e) {
+                    $this->logError('Sale deleted notification failed', $e);
+                }
+            });
 
             return response()->json(['success' => 'Sale deleted successfully'], 200);
         } catch (\Exception $e) {
@@ -386,19 +379,7 @@ class SaleController extends Controller
             ->leftJoin('users', 'sales.created_by', '=', 'users.id')
             ->where('sales.id', $id)
             ->first();
-        $adminMail = app(SettingsRepository::class)->get('mail_settings');
-        $telegramSettings = app(SettingsRepository::class)->get('telegram_settings');
-
-        if ($telegramSettings) {
-            $telegramSettings = json_decode($telegramSettings, true);
-            Notification::route('telegram', $telegramSettings['chat_id'])->notify(new SaleCreated($sale, $telegramSettings['token']));
-        }
-
-        if ($adminMail) {
-            $adminMail = json_decode($adminMail, true);
-            $adminMail = $adminMail['admin_email'];
-            Notification::route('mail', $adminMail)->notify(new SaleCreated($sale));
-        } else {
+        if (!app(SaleNotifier::class)->created($sale)) {
             return response()->json(['error' => 'Admin mail settings not found'], 404);
         }
 
