@@ -355,7 +355,15 @@ class SaleController extends Controller
             app(SaleReversalService::class)->delete($sale, Auth::id());
             DB::commit();
 
-            app(SaleNotifier::class)->deleted($sale);
+            // send after the response so a slow or broken mail server does not hold up
+            // (or fail) a delete that has already been saved
+            app()->terminating(function () use ($sale) {
+                try {
+                    app(SaleNotifier::class)->deleted($sale);
+                } catch (\Throwable $e) {
+                    $this->logError('Sale deleted notification failed', $e);
+                }
+            });
 
             return response()->json(['success' => 'Sale deleted successfully'], 200);
         } catch (\Exception $e) {

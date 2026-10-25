@@ -5,9 +5,12 @@ namespace Tests\Feature;
 use App\Models\Setting;
 use App\Notifications\SaleCreated;
 use App\Notifications\SaleDeleted;
+use App\Services\Sales\SaleNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use RuntimeException;
 use Tests\Concerns\MakesCheckouts;
 use Tests\Concerns\SeedsPos;
 use Tests\TestCase;
@@ -68,5 +71,19 @@ class SaleNotifierTest extends TestCase
 
         Notification::assertSentTo(new AnonymousNotifiable, SaleDeleted::class, fn ($n, $channels, $notifiable) => ($notifiable->routes['mail'] ?? null) === 'owner@example.com');
         Notification::assertSentTo(new AnonymousNotifiable, SaleDeleted::class, fn ($n, $channels, $notifiable) => ($notifiable->routes['telegram'] ?? null) === '123');
+    }
+
+    public function test_a_failing_notification_does_not_fail_the_delete(): void
+    {
+        $saleId = $this->sale();
+
+        $this->mock(SaleNotifier::class)
+            ->shouldReceive('deleted')->once()->andThrow(new RuntimeException('SMTP down'));
+        Log::shouldReceive('error')->once()
+            ->withArgs(fn ($message, $context) => $message === 'Sale deleted notification failed' && $context['error_message'] === 'SMTP down');
+
+        $this->deleteJson("/sales/{$saleId}")->assertOk()->assertJson(['success' => 'Sale deleted successfully']);
+
+        $this->assertSoftDeleted('sales', ['id' => $saleId]);
     }
 }
