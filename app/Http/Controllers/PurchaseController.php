@@ -10,14 +10,14 @@ use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\ProductBatch;
 use App\Services\Inventory\StockService;
-use App\Models\PurchaseTransaction;
+use App\Services\Payments\PaymentRecorder;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
-    public function __construct(private StockService $stock)
+    public function __construct(private StockService $stock, private PaymentRecorder $payments)
     {
     }
 
@@ -167,39 +167,8 @@ class PurchaseController extends Controller
                 }
             }
 
-            $purchaseAmountPaid = 0;
-            foreach ($payments as $payment) {
-                $transactionData = [
-                    'purchase_id' => $purchase->id,
-                    'store_id' => $purchase->store_id,
-                    'contact_id' => $purchase->contact_id,
-                    'transaction_date' => now(),
-                    'amount' => $payment['amount'], // Amount from the payment array
-                    'payment_method' => $payment['payment_method'],
-                ];
+            $purchaseAmountPaid = $this->payments->recordOrderPayments(PaymentRecorder::PURCHASE, $purchase, $payments, now());
 
-                if ($payment['payment_method'] != 'Credit') {
-                    // Determine transaction type based on the payment method
-                    if ($payment['payment_method'] == 'Account') {
-                        // Set transaction type to 'account' for account payments
-                        $transactionData['transaction_type'] = 'account';
-                        Contact::where('id', $purchase->contact_id)->decrement('balance', $payment['amount']);
-                    } else {
-                        // Set transaction type to 'purchase' for other payment methods
-                        $transactionData['transaction_type'] = 'purchase';
-                    }
-
-                    // Update the total amount received
-                    $purchaseAmountPaid += $payment['amount'];
-
-                    // Create the transaction
-                    PurchaseTransaction::create($transactionData);
-                } else if ($payment['payment_method'] == 'Credit') {
-                    $transactionData['transaction_type'] = 'purchase';
-                    PurchaseTransaction::create($transactionData);
-                    Contact::where('id', $purchase->contact_id)->decrement('balance', $payment['amount']);
-                }
-            }
             if ($purchaseAmountPaid >= $purchase->total_amount) $purchase->status = 'completed';
             $purchase->amount_paid = $purchaseAmountPaid;
             $purchase->save(); //Update amount received
