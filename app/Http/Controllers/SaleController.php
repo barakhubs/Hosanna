@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Queries\SaleReceiptQuery;
 use App\Settings\SettingsRepository;
 use App\Support\SqlDialect;
 use App\Support\StorageUrl;
@@ -22,6 +23,10 @@ use Carbon\Carbon;
 
 class SaleController extends Controller
 {
+    public function __construct(private SaleReceiptQuery $receipts)
+    {
+    }
+
     public function getSales($filters)
     {
 
@@ -95,7 +100,7 @@ class SaleController extends Controller
         $settingArray = app(SettingsRepository::class)->all();
         $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
 
-        $sale = Sale::select(
+        $sale = $this->receipts->sales([
             'sales.id',
             'contact_id',            // Customer ID
             'sale_date',              // Sale date
@@ -111,10 +116,8 @@ class SaleController extends Controller
             'invoice_number',
             'stores.sale_prefix',
             'stores.contact_number',
-            'sales.created_at'
-        )
-            ->leftJoin('contacts', 'sales.contact_id', '=', 'contacts.id') // Join with contacts table using customer_id
-            ->join('stores', 'sales.store_id', '=', 'stores.id')
+            'sales.created_at',
+        ])
             ->where('sales.id', $id)
             ->first();
 
@@ -124,7 +127,7 @@ class SaleController extends Controller
 
         $user = User::find($sale->created_by);
 
-        $salesItems = SaleItem::select(
+        $salesItems = $this->receipts->items([
             'sale_items.quantity',
             'sale_items.unit_price',
             'sale_items.discount',
@@ -137,17 +140,7 @@ class SaleController extends Controller
             'sale_items.rate_value',
             'sale_items.rate_type',
             'products.name',
-            DB::raw("CASE
-                WHEN products.product_type = 'reload'
-                THEN reload_and_bill_metas.account_number
-                ELSE NULL
-             END as account_number")
-        )
-            ->leftJoin('products', 'sale_items.product_id', '=', 'products.id') // Join with contacts table using customer_id
-            ->leftJoin('reload_and_bill_metas', function ($join) {
-                $join->on('sale_items.id', '=', 'reload_and_bill_metas.sale_item_id')
-                    ->where('products.product_type', '=', 'reload');
-            })
+        ])
             ->where('sale_items.sale_id', $id)
             ->get();
 
@@ -254,7 +247,7 @@ class SaleController extends Controller
     public function pendingSalesReceipt(Request $request, $contact_id)
     {
         $settingArray = app(SettingsRepository::class)->all();
-        $sales = Sale::select(
+        $columns = [
             'sales.id',
             'sale_date',              // Sale date
             'total_amount',           // Total amount (Total amount after discount [net_total - discount])
@@ -268,37 +261,20 @@ class SaleController extends Controller
             'invoice_number',
             'stores.sale_prefix',
             'stores.contact_number',
-            'sales.created_at'
-        )
+            'sales.created_at',
+        ];
+
+        $sales = $this->receipts->sales($columns)
             ->where('sales.contact_id', $contact_id) // Filter by contact_id
             ->where('sales.status', 'pending')
-            ->leftJoin('contacts', 'sales.contact_id', '=', 'contacts.id') // Join with contacts table using customer_id
-            ->join('stores', 'sales.store_id', '=', 'stores.id')
             ->get(); // Fetch all matching sales
 
         $saleIds = $sales->pluck('id')->toArray();
 
         // Fetch return sale for the pending sales
-        $completedSales = Sale::select(
-            'sales.id',
-            'sale_date',
-            'total_amount',
-            'discount',
-            'amount_received',
-            'status',
-            'stores.address',
-            'contacts.name',
-            'contacts.whatsapp',
-            'contacts.balance',
-            'invoice_number',
-            'stores.sale_prefix',
-            'stores.contact_number',
-            'sales.created_at'
-        )
+        $completedSales = $this->receipts->sales($columns)
             ->where('sales.contact_id', $contact_id)
             ->whereIn('sales.reference_id', $saleIds)
-            ->leftJoin('contacts', 'sales.contact_id', '=', 'contacts.id')
-            ->join('stores', 'sales.store_id', '=', 'stores.id')
             ->get();
 
         $sales = $sales->merge($completedSales);
@@ -315,7 +291,7 @@ class SaleController extends Controller
         // Fetch all sale items related to the fetched sales
         $dateFormat = SqlDialect::concat("' ['", SqlDialect::date('sale_items.sale_date'), "'] - '", 'products.name');
 
-        $salesItems = SaleItem::select(
+        $salesItems = $this->receipts->items([
             'sale_items.quantity',
             'sale_items.unit_price',
             'sale_items.discount',
@@ -329,18 +305,8 @@ class SaleController extends Controller
             'sale_items.rate_type',
             DB::raw("$dateFormat as name"),
             'sale_items.sale_id', // Include sale_id for mapping
-            DB::raw("CASE
-                WHEN products.product_type = 'reload'
-                THEN reload_and_bill_metas.account_number
-                ELSE NULL
-             END as account_number")
-        )
+        ])
             ->whereIn('sale_items.sale_id', $sales->pluck('id')) // Fetch only items for the selected sales
-            ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
-            ->leftJoin('reload_and_bill_metas', function ($join) {
-                $join->on('sale_items.id', '=', 'reload_and_bill_metas.sale_item_id')
-                    ->where('products.product_type', '=', 'reload');
-            })
             ->get();
 
         $mergedSale = [
@@ -445,7 +411,7 @@ class SaleController extends Controller
         $settingArray['shop_logo'] = 'public/' . $settingArray['shop_logo'];
         $isJson = $request->input('isJson');
 
-        $sale = Sale::select(
+        $sale = $this->receipts->sales([
             'sales.id',
             'contact_id',
             'sale_date',
@@ -459,10 +425,8 @@ class SaleController extends Controller
             'stores.contact_number',
             'contacts.name as client_name',
             'sales.created_by',
-            'invoice_number'
-        )
-            ->leftJoin('contacts', 'sales.contact_id', '=', 'contacts.id')
-            ->join('stores', 'sales.store_id', '=', 'stores.id')
+            'invoice_number',
+        ])
             ->where('sales.id', $id)
             ->first();
 
@@ -472,24 +436,14 @@ class SaleController extends Controller
 
         $user = User::find($sale->created_by);
 
-        $saleItems = SaleItem::select(
+        $saleItems = $this->receipts->items([
             'sale_items.quantity',
             'sale_items.unit_price',
             'sale_items.discount',
             'sale_items.flat_discount',
             'sale_items.free_quantity',
             'products.name as product_name',
-            DB::raw("CASE 
-            WHEN products.product_type = 'reload' 
-            THEN reload_and_bill_metas.account_number 
-            ELSE NULL 
-         END as account_number")
-        )
-            ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
-            ->leftJoin('reload_and_bill_metas', function ($join) {
-                $join->on('sale_items.id', '=', 'reload_and_bill_metas.sale_item_id')
-                    ->where('products.product_type', '=', 'reload');
-            })
+        ])
             ->where('sale_items.sale_id', $id)
             ->get();
 
