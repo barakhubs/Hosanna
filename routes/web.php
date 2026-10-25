@@ -145,7 +145,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/quote-template', [SettingController::class, 'quoteTemplate'])->middleware('permission:settings');
     Route::get('/settings/receipt-template', [SettingController::class, 'receiptTemplate'])->middleware('permission:settings');
     Route::get('/settings/barcode-template', [SettingController::class, 'barcodeTemplate'])->middleware('permission:settings');
-    Route::post('/settings/save-template', [SettingController::class, 'updateTemplate'])->middleware('permission:settings');
     Route::get('/settings/custom-css', [SettingController::class, 'customCSS'])->middleware('permission:settings');
     Route::post('/settings/custom-css', [SettingController::class, 'updateCustomCSS'])->middleware('permission:settings');
     Route::post('/settings/module/{action}', [SettingController::class, 'updateModule'])->middleware('permission:settings');
