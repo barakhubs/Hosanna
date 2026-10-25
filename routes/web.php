@@ -44,9 +44,12 @@ Route::get('/', function () {
     // ]);
 });
 
-Route::get('/receipt/{id}', [SaleController::class, 'receipt'])->name('sales.receipt');
-Route::get('/api/receipt-text-raw/{id}', [SaleController::class, 'apiReceipt']);
-Route::get('/pending-sales-receipt/{contact_id}', [SaleController::class, 'pendingSalesReceipt']);
+// Receipts stay public so they can be shared with customers
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/receipt/{id}', [SaleController::class, 'receipt'])->name('sales.receipt');
+    Route::get('/api/receipt-text-raw/{id}', [SaleController::class, 'apiReceipt']);
+    Route::get('/pending-sales-receipt/{contact_id}', [SaleController::class, 'pendingSalesReceipt']);
+});
 
 Route::get('/version', [UpgradeController::class, 'checkVersion']);
 Route::post('/api/application-update', [UpgradeController::class, 'applicationUpdate'])->middleware('throttle:5,1');

@@ -94,4 +94,13 @@ class RoutePermissionTest extends TestCase
         $this->get('/pos/debug')->assertNotFound();
         $this->get('/check-update')->assertNotFound();
     }
+
+    public function test_public_receipts_are_rate_limited(): void
+    {
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/api/receipt-text-raw/999')->assertNotFound();
+        }
+
+        $this->getJson('/api/receipt-text-raw/999')->assertStatus(429);
+    }
 }
