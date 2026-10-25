@@ -14,6 +14,7 @@ use App\Models\SaleItem;
 use App\Models\Transaction;
 use App\Models\Contact;
 use App\Services\Inventory\StockService;
+use App\Services\Payments\PaymentRecorder;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\ReloadAndBillMeta;
@@ -30,7 +31,7 @@ use App\Models\Charge;
 
 class POSController extends Controller
 {
-    public function __construct(private StockService $stock)
+    public function __construct(private StockService $stock, private PaymentRecorder $payments)
     {
     }
 
@@ -395,39 +396,7 @@ class POSController extends Controller
                 $sale->payment_status = 'completed';
                 $sale->save();
             } else {
-                foreach ($payments as $payment) {
-
-                    $transactionData = [
-                        'sales_id' => $sale->id,
-                        'store_id' => $sale->store_id,
-                        'contact_id' => $sale->contact_id,
-                        'transaction_date' => $sale->sale_date,
-                        'amount' => $payment['amount'],
-                        'payment_method' => $payment['payment_method'],
-                    ];
-
-                    // Check if the payment method is not 'Credit'
-                    if ($payment['payment_method'] != 'Credit') {
-                        // Determine transaction type based on the payment method
-                        if ($payment['payment_method'] == 'Account') {
-                            // Set transaction type to 'account' for account payments
-                            $transactionData['transaction_type'] = 'account';
-                            Contact::where('id', $sale->contact_id)->decrement('balance', $payment['amount']);
-                        } else {
-                            $transactionData['transaction_type'] = 'sale';
-                        }
-
-                        // Update the total amount received
-                        $amountReceived += $payment['amount'];
-
-                        // Create the transaction
-                        Transaction::create($transactionData);
-                    } else if ($payment['payment_method'] == 'Credit') {
-                        $transactionData['transaction_type'] = 'sale';
-                        Transaction::create($transactionData);
-                        Contact::where('id', $sale->contact_id)->decrement('balance', $payment['amount']);
-                    }
-                }
+                $amountReceived += $this->payments->recordOrderPayments(PaymentRecorder::SALE, $sale, $payments, $sale->sale_date);
 
                 if ($amountReceived >= $total) {
                     $sale->payment_status = 'completed';

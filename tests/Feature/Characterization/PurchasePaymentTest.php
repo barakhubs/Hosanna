@@ -211,4 +211,102 @@ class PurchasePaymentTest extends TestCase
         $this->assertSame([100.0, 50.0], $children->pluck('amount')->map(fn ($a) => (float) $a)->all());
         $this->assertSame(['Account'], $children->pluck('payment_method')->unique()->values()->all());
     }
+
+    protected function creditPurchase(string $date, float $total): Purchase
+    {
+        $stock = $this->stockFor(['cost' => $total, 'batch_number' => 'B'.$date]);
+
+        $this->purchase([[
+            'id' => $stock->product_id, 'batch_id' => $stock->batch_id, 'name' => 'Item',
+            'batch_number' => 'B'.$date, 'status' => 'existing', 'product_type' => 'simple',
+            'cost' => $total, 'price' => $total, 'quantity' => 1,
+        ]], [['payment_method' => 'Credit', 'amount' => $total]], $total)->assertStatus(201);
+
+        $purchase = Purchase::latest('id')->first();
+        $purchase->update(['purchase_date' => $date]);
+
+        return $purchase;
+    }
+
+    public function test_vendor_payment_against_a_purchase(): void
+    {
+        $purchase = $this->creditPurchase('2025-01-10', 200);
+
+        $this->postJson('/vendor-transaction', [
+            'amount' => 200,
+            'payment_method' => 'Cash',
+            'transaction_date' => '2025-01-16',
+            'contact_id' => $this->vendor->id,
+            'transaction_id' => $purchase->id,
+            'store_id' => $this->store->id,
+        ])->assertOk()->assertJson(['message' => 'Payment added successfully']);
+
+        $purchase->refresh();
+        $this->assertEquals(200, $purchase->amount_paid);
+        $this->assertSame('completed', $purchase->status);
+        // unlike sales, paying one purchase leaves payment_status alone
+        $this->assertSame('pending', $purchase->payment_status);
+        $this->assertEquals(0, $this->vendor->fresh()->balance);
+
+        $payment = PurchaseTransaction::where('payment_method', 'Cash')->sole();
+        $this->assertSame('purchase', $payment->transaction_type);
+        $this->assertEquals(-200, CashLog::where('reference_id', $payment->id)->sole()->amount);
+    }
+
+    public function test_vendor_account_payment_is_allocated_oldest_first(): void
+    {
+        $newer = $this->creditPurchase('2025-01-10', 100);
+        $older = $this->creditPurchase('2025-01-05', 100);
+        $this->assertEquals(-200, $this->vendor->fresh()->balance);
+
+        $this->postJson('/vendor-transaction', [
+            'amount' => 150,
+            'payment_method' => 'Cash',
+            'transaction_date' => '2025-01-16',
+            'contact_id' => $this->vendor->id,
+            'store_id' => $this->store->id,
+        ])->assertOk();
+
+        $this->assertEquals(-50, $this->vendor->fresh()->balance);
+        $this->assertSame('completed', $older->fresh()->payment_status);
+        $this->assertEquals(50, $newer->fresh()->amount_paid);
+        $this->assertSame('pending', $newer->fresh()->payment_status);
+
+        $parent = PurchaseTransaction::whereNull('purchase_id')->sole();
+        $this->assertSame('account', $parent->transaction_type);
+        $this->assertSame(2, PurchaseTransaction::where('parent_id', $parent->id)->where('payment_method', 'Account')->count());
+    }
+
+    public function test_account_method_against_a_sale_leaves_balance(): void
+    {
+        $stock = $this->stockFor(['price' => 100]);
+        $saleId = $this->checkout([
+            'net_total' => 100,
+            'cartItems' => [$this->cartItem($stock)],
+            'payments' => [['payment_method' => 'Credit', 'amount' => 100]],
+        ])->json('sale_id');
+
+        $this->postJson('/customer-transaction', [
+            'amount' => 100,
+            'payment_method' => 'Account',
+            'transaction_date' => '2025-01-16',
+            'contact_id' => $this->customer->id,
+            'transaction_id' => $saleId,
+            'store_id' => $this->store->id,
+        ])->assertOk();
+
+        $this->assertEquals(-100, $this->customer->fresh()->balance);
+        $this->assertSame('completed', Sale::find($saleId)->payment_status);
+        $this->assertSame('sale', Transaction::where('sales_id', $saleId)->where('payment_method', 'Account')->sole()->transaction_type);
+    }
+
+    public function test_payment_for_unknown_contact_fails(): void
+    {
+        config(['app.debug' => false]);
+
+        $this->postJson('/customer-transaction', ['amount' => 1, 'payment_method' => 'Cash', 'contact_id' => 999, 'store_id' => 1])
+            ->assertStatus(500);
+        $this->postJson('/vendor-transaction', ['amount' => 1, 'payment_method' => 'Cash', 'contact_id' => 999, 'store_id' => 1])
+            ->assertStatus(500)->assertJson(['error' => 'Trnsaction failed']);
+    }
 }
