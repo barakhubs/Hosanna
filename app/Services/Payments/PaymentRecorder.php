@@ -81,4 +81,117 @@ class PaymentRecorder
 
         return $paid;
     }
+
+    /**
+     * A payment from a customer or to a vendor made outside checkout.
+     * With an order it is applied to that order; without one it goes on the
+     * contact's account and is spread over their unpaid orders, oldest first.
+     *
+     * @param  array  $data  order_id, store_id, contact_id, transaction_date, amount, payment_method, note
+     */
+    public function recordContactPayment(string $side, array $data, bool $forOrder, $user): void
+    {
+        $config = self::SIDES[$side];
+        $amount = $data['amount'];
+        $paymentMethod = $data['payment_method'];
+
+        $contact = Contact::findOrFail($data['contact_id']);
+
+        $transactionData = [
+            $config['order_key'] => $data['order_id'],
+            'store_id' => $data['store_id'],
+            'contact_id' => $data['contact_id'],
+            'transaction_date' => $data['transaction_date'],
+            'amount' => $amount,
+            'payment_method' => $paymentMethod,
+            'note' => $data['note'],
+            'transaction_type' => 'account',
+        ];
+
+        if ($paymentMethod == 'Account' && $forOrder) {
+            $transactionData['transaction_type'] = $config['type'];
+        } elseif ($paymentMethod != 'Account' && $forOrder) {
+            $transactionData['transaction_type'] = $config['type'];
+            $contact->incrementBalance($amount, $user);
+        } else {
+            $contact->incrementBalance($amount, $user);
+        }
+
+        $parentTransaction = $config['transaction']::create($transactionData);
+
+        if ($forOrder) {
+            $this->applyToOrder($config, $data['order_id'], $amount);
+        } else {
+            $this->allocateToUnpaidOrders($config, $contact, $data, $parentTransaction);
+        }
+    }
+
+    private function applyToOrder(array $config, $orderId, $amount): void
+    {
+        $order = $config['order']::where('id', $orderId)->first();
+        if (!$order) {
+            return;
+        }
+
+        $order->increment($config['paid_column'], $amount);
+
+        if ($order->{$config['paid_column']} >= $order->total_amount) {
+            $order->status = 'completed';
+            if ($config['direct_payment_sets_payment_status']) {
+                $order->payment_status = 'completed';
+            }
+        }
+
+        $order->save();
+    }
+
+    private function allocateToUnpaidOrders(array $config, Contact $contact, array $data, Model $parentTransaction): void
+    {
+        $paidColumn = $config['paid_column'];
+        $amount = $data['amount'];
+
+        $pendingOrders = $config['order']::where('contact_id', $data['contact_id'])
+            ->whereRaw("total_amount > {$paidColumn}")
+            ->orderBy($config['date_column'], 'asc')
+            ->get();
+
+        $pendingTotal = $pendingOrders->sum(fn ($order) => $order->total_amount - $order->{$paidColumn});
+
+        // The balance already includes this payment, so take it back out to find
+        // what was owed before it, apart from the unpaid orders themselves.
+        $contactBalance = $contact->balance - $amount;
+        $openingBalance = $contactBalance + $pendingTotal;
+        $remainingAmount = $amount + $openingBalance;
+
+        foreach ($pendingOrders as $order) {
+            if ($remainingAmount <= 0) {
+                break;
+            }
+
+            $allocationAmount = min($remainingAmount, $order->total_amount - $order->{$paidColumn});
+            $order->increment($paidColumn, $allocationAmount);
+
+            if ($order->{$paidColumn} >= $order->total_amount) {
+                $order->status = 'completed';
+                $order->payment_status = 'completed';
+            } else {
+                $order->payment_status = 'pending';
+            }
+            $order->save();
+
+            $config['transaction']::create([
+                $config['order_key'] => $order->id,
+                'store_id' => $data['store_id'],
+                'contact_id' => $data['contact_id'],
+                'transaction_date' => $data['transaction_date'],
+                'amount' => $allocationAmount,
+                'payment_method' => 'Account',
+                'note' => $data['note'],
+                'transaction_type' => $config['type'],
+                'parent_id' => $parentTransaction->id,
+            ]);
+
+            $remainingAmount -= $allocationAmount;
+        }
+    }
 }

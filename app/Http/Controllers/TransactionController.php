@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Payments\PaymentRecorder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Transaction;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
+    public function __construct(private PaymentRecorder $payments)
+    {
+    }
+
     public function storeCustomerTransaction(Request $request)
     {
         $amount = $request->input('amount');
@@ -27,106 +32,17 @@ class TransactionController extends Controller
         $saleID = $request->input('transaction_id');
         $storeId = $request->input('store_id');
 
-        $transactionData = [
-            'sales_id' => $saleID,
-            'store_id' => $storeId,
-            'contact_id' => $contactId,
-            'transaction_date' => $transactionDate,
-            'amount' => $amount,
-            'payment_method' => $paymentMethod,
-            'note' => $note,
-        ];
-
         DB::beginTransaction();
         try {
-            $contact = Contact::findOrFail($contactId);
-            $user = Auth::user();
-
-            $transactionData['transaction_type'] = 'account';
-            if ($paymentMethod == 'Account' && $request->has('transaction_id')) {
-                $transactionData['transaction_type'] = 'sale';
-            } elseif ($paymentMethod != 'Account' && $request->has('transaction_id')) {
-                $transactionData['transaction_type'] = 'sale';
-                $contact->incrementBalance($amount, $user);
-            } else {
-                $contact->incrementBalance($amount, $user);
-            }
-
-            $parentTransaction = Transaction::create($transactionData);
-
-            //If it has transaction id, it means, it comes from sale, if not then it's from account (from contact view)
-            if ($request->has('transaction_id')) {
-                $sale = Sale::where('id', $saleID)->first();
-                if ($sale) {
-                    // Increment the amount_received field by the given amount
-                    $sale->increment('amount_received', $amount);
-
-                    // Check if the total amount received is greater than or equal to the total amount
-                    if ($sale->amount_received >= $sale->total_amount) {
-                        $sale->status = 'completed';
-                        $sale->payment_status = 'completed';
-                    }
-
-                    // Save the changes to the Sale record
-                    $sale->save();
-                }
-            } else {
-                $pendingSales = Sale::where('contact_id', $contactId)
-                    ->whereRaw('total_amount > amount_received')
-                    ->orderBy('sale_date', 'asc') // Oldest sales first
-                    ->get();
-
-                // Calculate the total pending amount for all sales
-                $pendingSalesBalance = $pendingSales->sum(function ($sale) {
-                    return $sale->total_amount - $sale->amount_received;
-                });
-
-                $contactBalance = $contact->balance - $amount;
-                $pendingSalesBalance = -$pendingSalesBalance;
-
-                $openingBalance = $contactBalance - $pendingSalesBalance;
-                $remainingAmount = $amount + $openingBalance;
-
-                // dd($remainingBalance);
-                foreach ($pendingSales as $sale) {
-                    if ($remainingAmount <= 0) {
-                        break; // Stop allocation when amount is exhausted
-                    }
-
-                    $salePendingAmount = $sale->total_amount - $sale->amount_received;
-
-                    // Allocate to this sale
-                    $allocationAmount = min($remainingAmount, $salePendingAmount);
-                    $sale->increment('amount_received', $allocationAmount);
-
-                    // Update sale status if fully paid
-                    if ($sale->amount_received >= $sale->total_amount) {
-                        $sale->status = 'completed';
-                        $sale->payment_status = 'completed';
-                    } else {
-                        $sale->payment_status = 'pending';
-                    }
-
-                    $sale->save();
-
-                    // Log the transaction for this sale
-                    Transaction::create([
-                        'sales_id' => $sale->id,
-                        'store_id' => $storeId,
-                        'contact_id' => $contactId,
-                        'transaction_date' => $transactionDate,
-                        'amount' => $allocationAmount,
-                        'payment_method' => 'Account',
-                        'note' => $note,
-                        'transaction_type' => 'sale',
-                        'parent_id' => $parentTransaction->id,
-                    ]);
-
-                    // Reduce remaining amount
-                    $remainingAmount -= $allocationAmount;
-                } //End of foreach loop | foreach ($pendingSales as $sale)
-            }
-
+            $this->payments->recordContactPayment(PaymentRecorder::SALE, [
+                'order_id' => $saleID,
+                'store_id' => $storeId,
+                'contact_id' => $contactId,
+                'transaction_date' => $transactionDate,
+                'amount' => $amount,
+                'payment_method' => $paymentMethod,
+                'note' => $note,
+            ], $request->has('transaction_id'), Auth::user());
 
             DB::commit();
             return response()->json([
@@ -153,101 +69,17 @@ class TransactionController extends Controller
         $purchaseID = $request->input('transaction_id');
         $storeId = $request->input('store_id');
 
-        $transactionData = [
-            'purchase_id' => $purchaseID,
-            'store_id' => $storeId,
-            'contact_id' => $contactId,
-            'transaction_date' => $transactionDate,
-            'amount' => $amount,
-            'payment_method' => $paymentMethod,
-            'note' => $note,
-        ];
-
         DB::beginTransaction();
         try {
-            $contact = Contact::findOrFail($contactId);
-            $user = Auth::user();
-
-            $transactionData['transaction_type'] = 'account';
-            if ($paymentMethod == 'Account' && $request->has('transaction_id')) {
-                $transactionData['transaction_type'] = 'purchase';
-            } elseif ($paymentMethod != 'Account' && $request->has('transaction_id')) {
-                $transactionData['transaction_type'] = 'purchase';
-                $contact->incrementBalance($amount, $user);
-            } else {
-                $contact->incrementBalance($amount, $user);
-            }
-
-            $parentTransaction = PurchaseTransaction::create($transactionData);
-
-            if ($request->has('transaction_id')) {
-                $purchase = Purchase::where('id', $purchaseID)->first();
-                if ($purchase) {
-                    // Increment the amount_paid field by the given amount
-                    $purchase->increment('amount_paid', $amount);
-
-                    // Check if the total amount received is greater than or equal to the total amount
-                    if ($purchase->amount_paid >= $purchase->total_amount) $purchase->status = 'completed';
-
-                    // Save the changes to the Purchase record
-                    $purchase->save();
-                }
-            } else {
-                $pendingPurchases = Purchase::where('contact_id', $contactId)
-                    ->whereRaw('total_amount > amount_paid')
-                    ->orderBy('purchase_date', 'asc') // Oldest purchase first
-                    ->get();
-
-                // Calculate the total pending amount for all purchases
-                $pendingPurchaseBalance = $pendingPurchases->sum(function ($purchase) {
-                    return $purchase->total_amount - $purchase->amount_paid;
-                });
-
-                $contactBalance = $contact->balance - $amount; //We deduct amount becuase it's already updated on Parent transaction
-                $pendingPurchasesBalance = -$pendingPurchaseBalance; //We convert purchase balance to negative to calculate the pending balance
-
-                $openingBalance = $contactBalance - $pendingPurchasesBalance;
-                $remainingAmount = $amount + $openingBalance;
-
-                // dd($openingBalance);
-                foreach ($pendingPurchases as $purchase) {
-                    if ($remainingAmount <= 0) {
-                        break; // Stop allocation when amount is exhausted
-                    }
-
-                    $purchasePendingAmount = $purchase->total_amount - $purchase->amount_paid;
-
-                    // Allocate to this purchase
-                    $allocationAmount = min($remainingAmount, $purchasePendingAmount);
-                    $purchase->increment('amount_paid', $allocationAmount);
-
-                    // Update purchase status if fully paid
-                    if ($purchase->amount_paid >= $purchase->total_amount) {
-                        $purchase->status = 'completed';
-                        $purchase->payment_status = 'completed';
-                    } else {
-                        $purchase->payment_status = 'pending';
-                    }
-
-                    $purchase->save();
-
-                    // Log the transaction for this purchase
-                    PurchaseTransaction::create([
-                        'purchase_id' => $purchase->id,
-                        'store_id' => $storeId,
-                        'contact_id' => $contactId,
-                        'transaction_date' => $transactionDate,
-                        'amount' => $allocationAmount,
-                        'payment_method' => 'Account',
-                        'note' => $note,
-                        'transaction_type' => 'purchase',
-                        'parent_id' => $parentTransaction->id,
-                    ]);
-
-                    // Reduce remaining amount
-                    $remainingAmount -= $allocationAmount;
-                } //End of foreach loop | foreach ($pendingPurchases as $purchase)
-            }
+            $this->payments->recordContactPayment(PaymentRecorder::PURCHASE, [
+                'order_id' => $purchaseID,
+                'store_id' => $storeId,
+                'contact_id' => $contactId,
+                'transaction_date' => $transactionDate,
+                'amount' => $amount,
+                'payment_method' => $paymentMethod,
+                'note' => $note,
+            ], $request->has('transaction_id'), Auth::user());
 
             DB::commit();
             return response()->json([
