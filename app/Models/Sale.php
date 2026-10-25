@@ -45,7 +45,8 @@ class Sale extends Model
             // Only generate invoice number if not already provided (e.g., from mobile/offline sales)
             if (empty($sale->invoice_number)) {
                 DB::transaction(function () use ($sale) {
-                    $store = Store::find($sale->store_id);
+                    // Lock the store row so two sales can't take the same number
+                    $store = Store::lockForUpdate()->find($sale->store_id);
                     if ($store) {
                         $sale_number = $store->current_sale_number+1;
                         $year = $sale->sale_date instanceof \Carbon\Carbon
