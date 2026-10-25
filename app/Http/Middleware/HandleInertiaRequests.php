@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\Setting;
+use App\Settings\SettingsRepository;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 
@@ -39,27 +39,16 @@ class HandleInertiaRequests extends Middleware
             $permissions = $role->permissions;
         }
 
-        $shopNameMeta = Setting::where('meta_key', 'shop_name')->first();
-        $currencySettingsMeta = Setting::where('meta_key', 'currency_settings')->first();
-
-        // Parse currency settings JSON or use defaults
-        $currencySettings = [];
-        if ($currencySettingsMeta) {
-            try {
-                $currencySettings = json_decode($currencySettingsMeta->meta_value, true) ?? [];
-            } catch (\Exception $e) {
-                $currencySettings = [];
-            }
-        }
-
-        $modules = Setting::getModules();
+        $settings = app(SettingsRepository::class);
+        $currencySettings = $settings->json('currency_settings') ?? [];
+        $modules = $settings->modules();
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
             ],
             'settings'=>[
-                'shop_name'=>$shopNameMeta->meta_value,
+                'shop_name'=>$settings->get('shop_name'),
                 'currency_settings'=>$currencySettings,
             ],
             'modules'=>$modules,
