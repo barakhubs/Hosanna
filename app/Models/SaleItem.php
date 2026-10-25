@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersByStoreAndDate;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,9 +10,12 @@ use App\Traits\Userstamps;
 
 class SaleItem extends Model
 {
+    use FiltersByStoreAndDate;
     use HasFactory;
     use SoftDeletes;
     use Userstamps;
+
+    protected $dateFilterColumn = 'sale_date';
 
     protected $fillable = [
         'sale_id',          // Sale ID without foreign key constraint
@@ -50,21 +54,5 @@ class SaleItem extends Model
     public function charge()
     {
         return $this->belongsTo(Charge::class);
-    }
-
-    public function scopeDateFilter($query, $start_date, $end_date)
-    {
-        if (!empty($start_date) && !empty($end_date)) {
-            return $query->whereBetween('sale_date', [$start_date, $end_date]);
-        }
-        return $query;
-    }
-
-    public function scopeStoreId($query, $storeId)
-    {
-        if ($storeId !== 'All' && $storeId !== 0) {
-            return $query->where('store_id', $storeId);
-        }
-        return $query;
     }
 }

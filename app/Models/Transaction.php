@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersByStoreAndDate;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,9 +11,12 @@ use App\Models\CashLog;
 
 class Transaction extends Model
 {
+    use FiltersByStoreAndDate;
     use HasFactory;
     use SoftDeletes;
     use Userstamps;
+
+    protected $dateFilterColumn = 'transaction_date';
 
     protected $fillable = [
         'sales_id',          // Unique identifier for the sale
@@ -68,22 +72,5 @@ class Transaction extends Model
     public function sale()
     {
         return $this->belongsTo(Sale::class, 'sales_id');
-    }
-
-    public function scopeStoreId($query, $storeId)
-    {
-        if ($storeId !== 'All' && $storeId !== 0) {
-            return $query->where('store_id', $storeId);
-        }
-        return $query;
-    }
-
-    
-    public function scopeDateFilter($query, $start_date, $end_date)
-    {
-        if (!empty($start_date) && !empty($end_date)) {
-            return $query->whereBetween('transaction_date', [$start_date, $end_date]);
-        }
-        return $query;
     }
 }

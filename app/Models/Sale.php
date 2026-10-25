@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersByStoreAndDate;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,9 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class Sale extends Model
 {
+    use FiltersByStoreAndDate;
     use HasFactory;
     use SoftDeletes;
     
+    protected $dateFilterColumn = 'sale_date';
+
     protected $fillable = [
         'invoice_number',
         'reference_id',
@@ -94,25 +98,6 @@ class Sale extends Model
     public function items()
     {
         return $this->hasMany(SaleItem::class, 'sale_id');
-    }
-
-    // Scope to filter sales by store_id
-    public function scopeStoreId($query, $storeId)
-    {
-        if ($storeId !== 'All' && $storeId !== 0) {
-            return $query->where('store_id', $storeId);
-        }
-        return $query;
-    }
-
-    
-    // Scope to filter sales by start_date and end_date
-    public function scopeDateFilter($query, $start_date, $end_date)
-    {
-        if (!empty($start_date) && !empty($end_date)) {
-            return $query->whereBetween('sale_date', [$start_date, $end_date]);
-        }
-        return $query;
     }
 
     public function store()
