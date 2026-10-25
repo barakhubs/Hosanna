@@ -2,9 +2,6 @@
 
 namespace App\Services\Sales;
 
-use App\Models\CashLog;
-use App\Models\Contact;
-use App\Models\Product;
 use App\Models\ReloadAndBillMeta;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -26,6 +23,7 @@ class CheckoutService
         private StockService $stock,
         private PaymentRecorder $payments,
         private ChargeCalculator $charges,
+        private SaleReversalService $reversal,
     ) {
     }
 
@@ -79,28 +77,7 @@ class CheckoutService
 
         $sale = Sale::findOrFail($editSaleId);
         $sale->update($saleData);
-
-        foreach ($sale->saleItems as $item) {
-            $product = Product::find($item->product_id);
-
-            if ($product->is_stock_managed) {
-                $restoreQty = $item->quantity + ($item->free_quantity ?? 0);
-                $this->stock->restore($sale->store_id, $item->batch_id, $restoreQty);
-            }
-        }
-
-        foreach ($sale->transactions as $transaction) {
-            if (in_array($transaction->payment_method, ['Account', 'Credit'])) {
-                Contact::where('id', $sale->contact_id)->increment('balance', $transaction->amount);
-            }
-
-            if ($transaction->payment_method == 'Cash') {
-                CashLog::where('reference_id', $transaction->id)->where('source', 'sales')->delete();
-            }
-        }
-
-        SaleItem::where('sale_id', $sale->id)->delete();
-        Transaction::where('sales_id', $sale->id)->delete();
+        $this->reversal->resetForEdit($sale);
 
         return $sale;
     }
