@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CheckoutRequest;
 use App\Models\Charge;
 use App\Models\Collection;
 use App\Models\Contact;
@@ -233,7 +234,7 @@ class POSController extends Controller
         ]);
     }
 
-    public function checkout(Request $request)
+    public function checkout(CheckoutRequest $request)
     {
         try {
             $sale = $this->checkout->checkout(
