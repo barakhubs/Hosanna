@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Settings\SettingsRepository;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -16,16 +17,15 @@ class Setting extends Model
 
     protected $fillable = ['meta_key', 'meta_value'];
 
+    protected static function booted()
+    {
+        static::saved(fn () => app(SettingsRepository::class)->flush());
+        static::deleted(fn () => app(SettingsRepository::class)->flush());
+    }
+
     public static function getMiscSettings()
     {
-        $setting = self::where('meta_key', 'misc_settings')->first();
-        if ($setting) {
-            $decodedValue = json_decode($setting->meta_value, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $decodedValue;
-            }
-        }
-        return null;
+        return app(SettingsRepository::class)->misc();
     }
 
     /**
@@ -35,10 +35,6 @@ class Setting extends Model
      */
     public static function getModules()
     {
-        $setting = self::where('meta_key', 'modules')->first();
-        if ($setting) {
-            return explode(',', $setting->meta_value);
-        }
-        return [];
+        return app(SettingsRepository::class)->modules();
     }
 }

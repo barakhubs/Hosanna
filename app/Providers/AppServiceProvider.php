@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\App;
 use App\Models\Setting;
+use App\Settings\SettingsRepository;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Support\Facades\Event;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(SettingsRepository::class);
     }
 
     /**
@@ -27,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Migrations can add or change settings rows without going through the model
+        Event::listen(MigrationsEnded::class, fn () => app(SettingsRepository::class)->flush());
 
         LogViewer::auth(function ($request) {
             /** @var \App\Models\User */
